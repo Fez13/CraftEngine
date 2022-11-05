@@ -8,11 +8,16 @@ int main() {
 
     int close = 1;
     while(close){
+        try{
         craft::App app("Engine", VK_MAKE_VERSION(1,0,0),VK_API_VERSION_1_3,layers);
         app.setDebug(true);
         close = app.mainLoop();
         app.clean();
+        } catch (const std::exception &error){
+            std::cerr<<error.what()<<'\n';
+            return EXIT_FAILURE;
+        }
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

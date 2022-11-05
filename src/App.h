@@ -10,30 +10,10 @@
 #include "glm.hpp"
 
 #include "utils.hpp"
+#include "vk_instance.h"
+#include "vk_graphic_device.h"
 
 namespace craft{
-
-    struct vk_instance{
-
-        vk_instance(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers);
-
-        VkInstance& getInstance();
-
-        static int setValidationLayers(const std::vector<std::string>& layers,VkInstanceCreateInfo &appInfo);
-
-        static std::vector<VkLayerProperties> getAvailableLayers();
-
-        static std::vector<VkExtensionProperties> getAvailableExtensions();
-
-        ~vk_instance();
-
-    private:
-
-        static bool checkLayer(const std::vector<VkLayerProperties> &availableLayers , const std::string& layer);
-
-        VkInstance m_instance;
-
-    };
 
     class App {
 
@@ -41,7 +21,7 @@ namespace craft{
 
         App(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers);
 
-        const glm::ivec2 GetWindowSize() const;
+        glm::ivec2 GetWindowSize() const;
 
         void SetWindowSize(glm::ivec2 newSize);
 
@@ -54,6 +34,8 @@ namespace craft{
     private:
 
         bool DEBUG;
+
+        std::unique_ptr<graphicProcessor> m_gpu;
 
         glm::ivec2 m_windowSize{};
 
