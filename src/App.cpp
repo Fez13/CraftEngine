@@ -9,39 +9,24 @@ namespace craft{
         if(!ft.geometryShader)
             return false;
 
+
         return true;
     }
 
     App::App(const char *appName, uint32_t appVersion, uint32_t apiVersion,
-                    const std::vector<std::string> &layers) : m_instance(appName,appVersion,apiVersion,layers), m_windowSize({800,600}), DEBUG(true) {
+                    const std::vector<std::string> &layers,const std::vector<std::string> &extensions) : m_instance(appName,appVersion,apiVersion,layers,extensions), DEBUG(true),
+                                                              m_window() {
 
 
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        m_window = glfwCreateWindow(m_windowSize.x, m_windowSize.y, "Craft", nullptr, nullptr);
+        m_window = window({800,600},60);
+        m_window.createSurface(m_instance.getInstance());
+
 
         m_gpu = std::make_unique<graphicProcessor>(graphicProcessor(m_instance.getInstance(),{IsGood}));
-
-        uint32_t queueFamily = m_gpu->getSuitableQueueFamily([](const VkQueueFamilyProperties & pts){
-
-            if(pts.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-                return true;
-            return false;
-
-        });
-
-        std::cout<<queueFamily;
-
-    }
-
-    glm::ivec2 App::GetWindowSize() const {
-        return m_windowSize;
-    }
-
-    void App::SetWindowSize(glm::ivec2 newSize) {
-        m_windowSize = newSize;
     }
 
     int App::mainLoop() {
@@ -54,15 +39,19 @@ namespace craft{
         for(auto o : extensions)
             std::cout<<'\t'<<o.extensionName<<'\n';
 
-
+        //Abstractions
+        auto abstractions = m_gpu->getAbstractionsData();
+        for(const auto& o : abstractions )
+            std::cout<<o<<'\n';
         //Layers
         std::cout<<"\nAvailable layers\n";
         auto layers = m_instance.getAvailableLayers();
         for(auto o : layers)
             std::cout<<'\t'<<o.layerName<<'\n';
+
         */
 
-        while (!glfwWindowShouldClose(m_window)) {
+        while (!glfwWindowShouldClose(m_window.mainWindow)) {
 
 
 
@@ -72,7 +61,8 @@ namespace craft{
     }
 
     void App::clean() {
-        glfwDestroyWindow(m_window);
+        m_gpu->free();
+        m_window.free(m_instance.getInstance());
         glfwTerminate();
     }
 }

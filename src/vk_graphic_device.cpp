@@ -24,14 +24,19 @@ namespace craft{
         if(!pick)
             throw std::runtime_error("There is not vulkan gpu available with the requested features");
 
-        uint32_t queueFamilyIndex = getSuitableQueueFamily([](const VkQueueFamilyProperties & pts){
+        //Creates the main abstract device
+
+        uint32_t queueFamilyIndex = getSuitableQueueFamily(mainInstance,[](const VkQueueFamilyProperties & pts){
             if(pts.queueFlags & VK_QUEUE_GRAPHICS_BIT)
                 return true;
-            return false;
 
+            if(pts.queueFlags & VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR)
+                return true;
+            return false;
         });
 
-        //TODO: Currently it only has support for 1 queue, this is not permanent
+        //TODO: I am not happy with this section of the code, but it works...
+        // At least by now
 
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
@@ -47,6 +52,16 @@ namespace craft{
         deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
         deviceCreateInfo.queueCreateInfoCount = 1;
         deviceCreateInfo.pEnabledFeatures = &thisIsBad;
+
+        deviceCreateInfo.enabledExtensionCount = 0;
+
+        m_mainDeviceAbstractions.emplace_back("main",VkDevice{},VkQueue{},queueFamilyIndex);
+
+        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&m_mainDeviceAbstractions[0].device) != VK_SUCCESS)
+            throw std::runtime_error("Error creating a virtual device");
+
+        m_mainDeviceAbstractions[0].findQueue();
+
 
 
     }
@@ -64,7 +79,7 @@ namespace craft{
         return valid;
     }
 
-    uint32_t graphicProcessor::getSuitableQueueFamily(const std::function<bool(const VkQueueFamilyProperties &)>& checks) {
+    uint32_t graphicProcessor::getSuitableQueueFamily(VkInstance &mainInstance,const std::function<bool(const VkQueueFamilyProperties &)>& checks) {
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(m_mainDevice, &families, nullptr);
 
@@ -79,9 +94,37 @@ namespace craft{
 
     VkDevice &graphicProcessor::getDeviceAbstraction(std::string &name) {
         for (auto &m_mainDeviceAbstraction: m_mainDeviceAbstractions)
-            if (m_mainDeviceAbstraction.second == name)
-                return m_mainDeviceAbstraction.first;
+            if (m_mainDeviceAbstraction.name == name)
+                return m_mainDeviceAbstraction.device;
         throw std::runtime_error("There is not deviceAbstraction with requested name");
+    }
+
+    void graphicProcessor::free() {
+        for(const auto& device : m_mainDeviceAbstractions)
+            vkDestroyDevice(device.device, nullptr);
+        m_mainDeviceAbstractions.clear();
+    }
+
+    VkQueue &graphicProcessor::getDeviceQueue(std::string &name) {
+        for (auto &m_mainDeviceAbstraction: m_mainDeviceAbstractions)
+            if (m_mainDeviceAbstraction.name == name)
+                return m_mainDeviceAbstraction.queue;
+        throw std::runtime_error("There is not deviceAbstraction with requested name");
+    }
+
+    std::vector<std::string> graphicProcessor::getAbstractionsData() {
+        std::vector<std::string> data_v;
+
+        std::string data;
+        for(const deviceAbstraction& abs : m_mainDeviceAbstractions){
+            data = abs.name;
+            data += '\n';
+            data += std::to_string(abs.family);
+            data += '\n';
+            data_v.push_back(data);
+        }
+
+        return data_v;
     }
 
 }

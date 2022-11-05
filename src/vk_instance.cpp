@@ -3,7 +3,7 @@
 namespace craft{
 
     craft::vk_instance::vk_instance(const char *appName, uint32_t appVersion, uint32_t apiVersion,
-                                    const std::vector<std::string>& layers) : m_instance() {
+                                    const std::vector<std::string>& layers = {},const std::vector<std::string>& extensions = {}) : m_instance() {
 
         VkApplicationInfo AppInfo{};
         AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -18,17 +18,45 @@ namespace craft{
         InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         InstanceCreateInfo.flags = VkInstanceCreateFlags();
         InstanceCreateInfo.pApplicationInfo = &AppInfo;
-        setValidationLayers(layers, InstanceCreateInfo);
 
 
-        uint32_t extensionCount = 0;
+        //setValidationLayers({"VK_LAYER_KHRONOS_validation"},  InstanceCreateInfo);
+        //setExtensions(extensions,&InstanceCreateInfo);
 
-        const char **extensions = nullptr;
+        ////////////////////
+        //I made voids for setting extensions and layers, but for some reason, they don't want to work
+        //TODO: And i should probably make it work
 
-        glfwGetRequiredInstanceExtensions(&extensionCount);
+        //Extensions
+        auto availableExtension = getAvailableExtensions();
+        std::vector<const char*> pp_extensions;
 
-        InstanceCreateInfo.enabledExtensionCount = extensionCount;
-        InstanceCreateInfo.ppEnabledExtensionNames = extensions;
+        for(const auto& extension : extensions){
+            if(!checkExtension(availableExtension,extension)){
+                std::cout << std::string("Couldn't find extension... \n\tExtension name: ") + extension << '\n';
+                continue;
+            }
+            pp_extensions.push_back(extension.c_str());
+        }
+
+        InstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(pp_extensions.size());
+        InstanceCreateInfo.ppEnabledExtensionNames = pp_extensions.data();
+
+        //Layers
+        auto availableLayers = getAvailableLayers();
+        std::vector<const char*> pp_layers;
+
+        for (const auto & layer : layers) {
+            if (!checkLayer(availableLayers, layer)){
+                std::cout << std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n';
+                continue;
+            }
+            pp_layers.push_back(layer.c_str());
+        }
+        InstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(pp_layers.size());
+        InstanceCreateInfo.ppEnabledLayerNames = pp_layers.data();
+
+        ////////////////////
 
         if(vkCreateInstance(&InstanceCreateInfo, nullptr,&m_instance) != VK_SUCCESS)
             throw std::runtime_error("ERROR CREATING INSTANCE");
@@ -64,22 +92,38 @@ namespace craft{
         return layers;
     }
 
+    int vk_instance::setExtensions(const std::vector<std::string>& extensions, VkInstanceCreateInfo *appInfo) {
+
+        auto availableExtension = getAvailableExtensions();
+        std::vector<const char*> pp_extensions;
+
+        for(const auto& extension : extensions){
+            if(!checkExtension(availableExtension,extension)){
+                std::cout << std::string("Couldn't find extension... \n\tExtension name: ") + extension << '\n';
+                continue;
+            }
+            pp_extensions.push_back(extension.c_str());
+        }
+
+        appInfo->enabledExtensionCount = static_cast<uint32_t>(pp_extensions.size());
+        appInfo->ppEnabledExtensionNames = pp_extensions.data();
+        return 0;
+    }
+
     int craft::vk_instance::setValidationLayers(const std::vector<std::string>& layers,VkInstanceCreateInfo &appInfo) {
-        int result = 0;
+
         auto availableLayers = getAvailableLayers();
         std::vector<const char*> pp_layers;
-
 
         for (const auto & layer : layers) {
             if (!checkLayer(availableLayers, layer)){
                 std::cout << std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n';
-                result = -1;
+                continue;
             }
             pp_layers.push_back(layer.c_str());
         }
-
-        appInfo.enabledExtensionCount = static_cast<uint32_t>(pp_layers.size());
-        appInfo.ppEnabledExtensionNames = pp_layers.data();
+        appInfo.enabledLayerCount = static_cast<uint32_t>(pp_layers.size());
+        appInfo.ppEnabledLayerNames = pp_layers.data();
         return 0;
     }
 
@@ -91,4 +135,11 @@ namespace craft{
         return false;
     }
 
+    bool vk_instance::checkExtension(const std::vector<VkExtensionProperties> &availableExtensions,
+                                     const std::string &extension) {
+        for(const auto & availableExtension : availableExtensions)
+            if((std::string)availableExtension.extensionName == extension)
+                return true;
+        return false;
+    }
 }

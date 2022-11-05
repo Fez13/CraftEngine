@@ -12,18 +12,16 @@
 #include "utils.hpp"
 #include "vk_instance.h"
 #include "vk_graphic_device.h"
+#include "window.h"
 
 namespace craft{
+
 
     class App {
 
     public:
 
-        App(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers);
-
-        glm::ivec2 GetWindowSize() const;
-
-        void SetWindowSize(glm::ivec2 newSize);
+        App(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers,const std::vector<std::string> &extensions);
 
         int mainLoop();
 
@@ -37,11 +35,9 @@ namespace craft{
 
         std::unique_ptr<graphicProcessor> m_gpu;
 
-        glm::ivec2 m_windowSize{};
+        window m_window;
 
         vk_instance m_instance;
-
-        GLFWwindow *m_window;
 
     };
 

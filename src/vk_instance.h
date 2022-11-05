@@ -10,11 +10,13 @@ namespace craft{
 
     struct vk_instance{
 
-        vk_instance(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers);
+        vk_instance(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers,const std::vector<std::string>& extensions);
 
         VkInstance& getInstance();
 
         static int setValidationLayers(const std::vector<std::string>& layers,VkInstanceCreateInfo &appInfo);
+
+        static int setExtensions(const std::vector<std::string>& extensions,VkInstanceCreateInfo *appInfo);
 
         static std::vector<VkLayerProperties> getAvailableLayers();
 
@@ -25,6 +27,9 @@ namespace craft{
     private:
 
         static bool checkLayer(const std::vector<VkLayerProperties> &availableLayers , const std::string& layer);
+
+        static bool checkExtension(const std::vector<VkExtensionProperties> &availableExtensions , const std::string& extension);
+
 
         VkInstance m_instance;
 
