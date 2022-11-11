@@ -7,10 +7,10 @@ Sorry for the shit english...
 
 ## How it works
 
-'''
+```c++
 void freeLife(){
   my::life m_life;
 
   VkDestroyLife(craftEngine,m_life,nullptr);
 }
-'''
+```
