@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -9,13 +10,19 @@
 
 #include "glm.hpp"
 
+//#define RELEASE
 #include "utils.hpp"
+#include "debug/log.h"
+#include "debug/time.h"
+
 #include "vk_instance.h"
 #include "vk_graphic_device.h"
-#include "window.h"
+#include "vk_window.h"
+#include "shaders/compile_Spir_V.h"
+#include "vk_renderer.h"
+
 
 namespace craft{
-
 
     class App {
 
@@ -27,17 +34,15 @@ namespace craft{
 
         void clean();
 
-        void setDebug(bool state){DEBUG = state;}
-
     private:
-
-        bool DEBUG;
 
         std::unique_ptr<graphicProcessor> m_gpu;
 
-        window m_window;
+        vk_window m_window;
 
         vk_instance m_instance;
+
+        vk_renderer m_rendered;
 
     };
 

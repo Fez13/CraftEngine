@@ -1,4 +1,6 @@
 #include "vk_instance.h"
+#include "utils.hpp"
+#include "debug/log.h"
 
 namespace craft{
 
@@ -9,7 +11,7 @@ namespace craft{
         AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         AppInfo.pApplicationName = appName;
         AppInfo.applicationVersion = appVersion;
-        AppInfo.apiVersion = appVersion;
+        AppInfo.apiVersion = apiVersion;
         AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         AppInfo.pEngineName = "Craft";
 
@@ -33,7 +35,7 @@ namespace craft{
 
         for(const auto& extension : extensions){
             if(!checkExtension(availableExtension,extension)){
-                std::cout << std::string("Couldn't find extension... \n\tExtension name: ") + extension << '\n';
+                LOG(std::string("Couldn't find extension... \n\tExtension name: ") + extension,0,0,0)
                 continue;
             }
             pp_extensions.push_back(extension.c_str());
@@ -48,7 +50,7 @@ namespace craft{
 
         for (const auto & layer : layers) {
             if (!checkLayer(availableLayers, layer)){
-                std::cout << std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n';
+                LOG(std::string("Couldn't find layer... \n\tLayer name: ") + layer,0,0,0)
                 continue;
             }
             pp_layers.push_back(layer.c_str());
@@ -99,7 +101,7 @@ namespace craft{
 
         for(const auto& extension : extensions){
             if(!checkExtension(availableExtension,extension)){
-                std::cout << std::string("Couldn't find extension... \n\tExtension name: ") + extension << '\n';
+                LOG(std::string("Couldn't find extension... \n\tExtension name: ") + extension,0,0,0)
                 continue;
             }
             pp_extensions.push_back(extension.c_str());
@@ -117,7 +119,7 @@ namespace craft{
 
         for (const auto & layer : layers) {
             if (!checkLayer(availableLayers, layer)){
-                std::cout << std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n';
+                LOG( std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n',0,0,0)
                 continue;
             }
             pp_layers.push_back(layer.c_str());

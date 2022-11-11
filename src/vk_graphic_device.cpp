@@ -1,4 +1,6 @@
 #include "vk_graphic_device.h"
+#include "debug/time.h"
+
 
 namespace craft{
 
@@ -21,48 +23,19 @@ namespace craft{
                 pick = true;
             }
 
+
         if(!pick)
             throw std::runtime_error("There is not vulkan gpu available with the requested features");
 
         //Creates the main abstract device
 
-        uint32_t queueFamilyIndex = getSuitableQueueFamily(mainInstance,[](const VkQueueFamilyProperties & pts){
-            if(pts.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-                return true;
-
-            if(pts.queueFlags & VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR)
-                return true;
-            return false;
+        uint32_t queueFamilyIndex = getSuitableQueueFamily(mainInstance, [](const VkQueueFamilyProperties & fp){
+            if(!(fp.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+                return false;
+            return true;
         });
-
-        //TODO: I am not happy with this section of the code, but it works...
-        // At least by now
-
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueCount = 1;
         float priority = 1.0f;
-        queueCreateInfo.pQueuePriorities = &priority;
-
-        VkPhysicalDeviceFeatures thisIsBad{};
-
-        VkDeviceCreateInfo deviceCreateInfo{};
-        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-        deviceCreateInfo.queueCreateInfoCount = 1;
-        deviceCreateInfo.pEnabledFeatures = &thisIsBad;
-
-        deviceCreateInfo.enabledExtensionCount = 0;
-
-        m_mainDeviceAbstractions.emplace_back("main",VkDevice{},VkQueue{},queueFamilyIndex);
-
-        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&m_mainDeviceAbstractions[0].device) != VK_SUCCESS)
-            throw std::runtime_error("Error creating a virtual device");
-
-        m_mainDeviceAbstractions[0].findQueue();
-
-
+        createDeviceAbstraction(queueFamilyIndex,"main",priority);
 
     }
 
@@ -78,8 +51,8 @@ namespace craft{
             valid = validator(deviceProperties,deviceFeatures);
         return valid;
     }
-
-    uint32_t graphicProcessor::getSuitableQueueFamily(VkInstance &mainInstance,const std::function<bool(const VkQueueFamilyProperties &)>& checks) {
+    uint32_t graphicProcessor::getSuitableQueueFamily(VkInstance &mainInstance,
+                                                      std::function<bool(const VkQueueFamilyProperties & fp)> checks) {
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(m_mainDevice, &families, nullptr);
 
@@ -92,7 +65,7 @@ namespace craft{
         throw std::runtime_error("There is not queue family with requested capabilities");
     }
 
-    VkDevice &graphicProcessor::getDeviceAbstraction(std::string &name) {
+    VkDevice &graphicProcessor::getDeviceAbstraction(std::string name) {
         for (auto &m_mainDeviceAbstraction: m_mainDeviceAbstractions)
             if (m_mainDeviceAbstraction.name == name)
                 return m_mainDeviceAbstraction.device;
@@ -127,4 +100,54 @@ namespace craft{
         return data_v;
     }
 
+    void graphicProcessor::createDeviceAbstraction(uint32_t queueIndex, const std::string& name, float &priority,std::vector<const char*> gpuExtensions,VkPhysicalDeviceFeatures features) {
+
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.queueFamilyIndex = queueIndex;
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &priority;
+
+        VkDeviceCreateInfo deviceCreateInfo{};
+        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+        deviceCreateInfo.queueCreateInfoCount = 1;
+        deviceCreateInfo.pEnabledFeatures = &features;
+
+        deviceCreateInfo.ppEnabledExtensionNames = gpuExtensions.data();
+        deviceCreateInfo.enabledExtensionCount = gpuExtensions.size();
+
+        deviceAbstraction newDevice(name,VkDevice{},VkQueue{},queueIndex);
+
+        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&newDevice.device) != VK_SUCCESS) {
+            throw std::runtime_error("Error creating a virtual device");
+        }
+        newDevice.findQueue();
+        m_mainDeviceAbstractions.push_back(newDevice);
+    }
+
+    const VkPhysicalDevice &graphicProcessor::getPhysicalDevice() {
+        return m_mainDevice;
+    }
+
+    std::vector<uint32_t> graphicProcessor::getAllUsedFamilies() {
+        std::vector<uint32_t> indices;
+        for(const deviceAbstraction &abstraction : m_mainDeviceAbstractions)
+            indices.push_back(abstraction.family);
+
+        sort( indices.begin(), indices.end() );
+        indices.erase( unique( indices.begin(), indices.end() ), indices.end() );
+        return indices;
+    }
+
+    std::vector<VkExtensionProperties> graphicProcessor::getDeviceExtensions() {
+
+        std::vector<VkExtensionProperties> pts;
+        uint32_t extensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(m_mainDevice, nullptr,&extensionCount, nullptr);
+        pts.resize(extensionCount);
+
+        vkEnumerateDeviceExtensionProperties(m_mainDevice, nullptr,&extensionCount, pts.data());
+        return pts;
+    }
 }

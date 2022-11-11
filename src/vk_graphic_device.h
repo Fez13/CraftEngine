@@ -20,19 +20,28 @@ namespace craft{
 
         graphicProcessor(VkInstance &mainInstance,const std::vector<std::function<bool(VkPhysicalDeviceProperties&,VkPhysicalDeviceFeatures&)>>& checks);
 
-        uint32_t getSuitableQueueFamily(VkInstance &mainInstance, const std::function<bool(const VkQueueFamilyProperties&)>& checks);
+        uint32_t getSuitableQueueFamily(VkInstance &mainInstance, std::function<bool(const VkQueueFamilyProperties &)> checks);
 
-        VkDevice &getDeviceAbstraction(std::string &name);
+        VkDevice &getDeviceAbstraction(std::string name);
 
         VkQueue &getDeviceQueue(std::string &name);
 
+        const VkPhysicalDevice &getPhysicalDevice();
+
+        std::vector<uint32_t> getAllUsedFamilies();
+
         std::vector<std::string> getAbstractionsData();
+
+        std::vector<VkExtensionProperties> getDeviceExtensions();
+
+        void createDeviceAbstraction(uint32_t queueIndex,const std::string& name,float& priority,std::vector<const char*> gpuExtensions = {},VkPhysicalDeviceFeatures features = VkPhysicalDeviceFeatures{});
 
         void free();
 
     private:
 
         struct deviceAbstraction{
+        public:
             std::string name;
             VkDevice device;
             VkQueue queue;
