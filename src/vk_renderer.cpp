@@ -11,7 +11,7 @@ namespace craft{
 
         VkShaderModule obj;
         if(vkCreateShaderModule(device,&createInfo, nullptr,&obj) != VK_SUCCESS)
-            LOG("Fail creating shader module","vk_renderer.cpp/14",999, -1);
+            LOG("Fail creating shader module",999, -1)
         return obj;
     }
 
@@ -33,7 +33,8 @@ namespace craft{
 
     vk_renderer::vk_renderer(VkDevice mainDevice) {
         m_mainWindow = nullptr;
-        m_mainDevice = nullptr;
+        m_pipelineLayout = nullptr;
+        m_renderPass = nullptr;
         m_mainDevice = mainDevice;
     }
 
@@ -53,14 +54,15 @@ namespace craft{
     void vk_renderer::createShaderPipeline() {
 
         if(m_mainDevice == nullptr){
-            LOG("Rendered without main device","vk_rendered/54",999,-1);
+            LOG("Rendered without main device",999,-1)
             exit(1);
         }
         if(m_mainWindow == nullptr){
-            LOG("Rendered without main window","vk_rendered/58",999,-1);
+            LOG("Rendered without main window",999,-1)
             exit(1);
         }
 
+        createRenderPass();
 
         VkPipelineShaderStageCreateInfo createInfoVertex{};
         createInfoVertex.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -69,10 +71,13 @@ namespace craft{
         createInfoVertex.pName = "main";
 
         VkPipelineShaderStageCreateInfo createInfoFragment{};
-        createInfoVertex.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        createInfoVertex.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        createInfoVertex.module = m_fragModule;
-        createInfoVertex.pName = "main";
+        createInfoFragment.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        createInfoFragment.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        createInfoFragment.module = m_fragModule;
+        createInfoFragment.pName = "main";
+
+
+        VkPipelineShaderStageCreateInfo stages[] = {createInfoVertex,createInfoFragment};
 
         VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
         dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -120,6 +125,87 @@ namespace craft{
         rasterizationStateCreateInfo.lineWidth = 1.0f;
         rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
         rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+
+        //May change
+        rasterizationStateCreateInfo.depthBiasEnable = VK_FALSE;
+        rasterizationStateCreateInfo.depthBiasConstantFactor = 0.0f; // Optional
+        rasterizationStateCreateInfo.depthBiasClamp = 0.0f; // Optional
+        rasterizationStateCreateInfo.depthBiasSlopeFactor = 0.0f; // Optional
+
+        //Will be enabled in the near future
+        VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+        multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+        multisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        multisampleStateCreateInfo.minSampleShading = 1.0f; // Optional
+        multisampleStateCreateInfo.pSampleMask = nullptr; // Optional
+        multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE; // Optional
+        multisampleStateCreateInfo.alphaToOneEnable = VK_FALSE; // Optional
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachmentState{};
+        colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+        //TODO:Should be modifiable
+        colorBlendAttachmentState.blendEnable = VK_TRUE;
+        colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+        colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+
+        VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{};
+        colorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlendStateCreateInfo.logicOpEnable = VK_FALSE;
+        colorBlendStateCreateInfo.logicOp = VK_LOGIC_OP_COPY; // Optional
+        colorBlendStateCreateInfo.attachmentCount = 1;
+        colorBlendStateCreateInfo.pAttachments = &colorBlendAttachmentState;
+
+        //TODO:Should be modifiable
+        colorBlendStateCreateInfo.blendConstants[0] = 0.0f; // Optional
+        colorBlendStateCreateInfo.blendConstants[1] = 0.0f; // Optional
+        colorBlendStateCreateInfo.blendConstants[2] = 0.0f; // Optional
+        colorBlendStateCreateInfo.blendConstants[3] = 0.0f; // Optional
+
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.setLayoutCount = 0; // Optional
+        pipelineLayoutCreateInfo.pSetLayouts = nullptr; // Optional
+        pipelineLayoutCreateInfo.pushConstantRangeCount = 0; // Optional
+        pipelineLayoutCreateInfo.pPushConstantRanges = nullptr; // Optional
+
+        if (vkCreatePipelineLayout(m_mainDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
+            LOG("Fail creating a pipelineLayout",999,-1)
+            exit(1);
+        }
+
+        VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
+        graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        graphicsPipelineCreateInfo.stageCount = 2;
+        graphicsPipelineCreateInfo.pStages = stages;
+
+        graphicsPipelineCreateInfo.pVertexInputState = &inputStateCreateInfo;
+        graphicsPipelineCreateInfo.pInputAssemblyState = &assemblyStateCreateInfo;
+        graphicsPipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+        graphicsPipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
+        graphicsPipelineCreateInfo.pMultisampleState = &multisampleStateCreateInfo;
+        graphicsPipelineCreateInfo.pDepthStencilState = nullptr; // Optional
+        graphicsPipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
+        graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+
+        graphicsPipelineCreateInfo.layout = m_pipelineLayout;
+        graphicsPipelineCreateInfo.renderPass = m_renderPass;
+        graphicsPipelineCreateInfo.subpass = 0;
+
+        //May change
+        graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+        graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
+
+        if (vkCreateGraphicsPipelines(m_mainDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_pipeline) != VK_SUCCESS) {
+            LOG("Error initializing the pipeline...",999,-1)
+            exit(1);
+        }
+
     }
 
     void vk_renderer::setMainWindow(vk_window *mainWindow) {
@@ -127,6 +213,9 @@ namespace craft{
     }
 
     void vk_renderer::free() {
+        vkDestroyPipeline(m_mainDevice,m_pipeline, nullptr);
+        vkDestroyRenderPass(m_mainDevice,m_renderPass, nullptr);
+        vkDestroyPipelineLayout(m_mainDevice,m_pipelineLayout, nullptr);
         vkDestroyShaderModule(m_mainDevice,m_vertexModule, nullptr);
         vkDestroyShaderModule(m_mainDevice,m_fragModule, nullptr);
     }
@@ -135,5 +224,46 @@ namespace craft{
         m_polygonMode = mode;
     }
 
+    void vk_renderer::createRenderPass() {
+        VkAttachmentDescription attachmentDescription{};
+        attachmentDescription.format = m_mainWindow->getSwapChainFormat();
+        //TODO multi-sampling
+        attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+
+        attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+        //TODO textures
+        attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference attachmentReference{};
+        attachmentReference.attachment = 0;
+        attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpassDescription{};
+        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+        //May be useful with the RTX problem
+        subpassDescription.colorAttachmentCount = 1;
+        subpassDescription.pColorAttachments = &attachmentReference;
+
+        VkRenderPassCreateInfo renderPassCreateInfo{};
+        renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassCreateInfo.attachmentCount = 1;
+        renderPassCreateInfo.pAttachments = &attachmentDescription;
+        renderPassCreateInfo.subpassCount = 1;
+        renderPassCreateInfo.pSubpasses = &subpassDescription;
+
+        if (vkCreateRenderPass(m_mainDevice, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
+            LOG("Couldn't initialize the render pass...",999,-1)
+            exit(1);
+        }
+    }
+
 }
+
+
 

@@ -114,7 +114,7 @@ namespace craft{
 
         if(!didFind[0]){
             m_swapChain.format = m_swapChainData.formats[0];
-            LOG("Not optimal format has been chose",0,0,0)
+            LOG("Not optimal format has been chose",0,0)
         }
         for (const auto& presentMode : m_swapChainData.presentModes)
             if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -124,7 +124,7 @@ namespace craft{
 
         if(!didFind[1]){
             m_swapChain.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-            LOG("Not optimal presentMode has been chose",0,0,0)
+            LOG("Not optimal presentMode has been chose",0,0)
         }
 
         if(m_swapChainData.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()){
@@ -137,7 +137,7 @@ namespace craft{
             int x,y;
             glfwGetFramebufferSize(mainWindow,&x,&y);
 
-            LOG("Not optimal extent has been chose",0,0,0)
+            LOG("Not optimal extent has been chose",0,0)
 
             VkExtent2D extent2D{
                 static_cast<uint32_t>(x),
@@ -202,6 +202,10 @@ namespace craft{
 
     VkExtent2D vk_window::getExtent() const {
         return m_swapChain.extent;
+    }
+
+    VkFormat vk_window::getSwapChainFormat() {
+        return m_swapChain.format.format;
     }
 
     void vk_window::SwapChain::UpdateImages(const VkDevice& device) {

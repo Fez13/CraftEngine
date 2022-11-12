@@ -56,24 +56,24 @@ namespace craft{
 
     int App::mainLoop() {
 
-        LOG("Main loop has started",0,0,0)
+        LOG("Main loop has started",0,1)
         /*
 
         //Extensions
-        LOG("Available Extensions",0,0,1)
+        LOG("Available Extensions",0,1)
         auto extensions = m_instance.getAvailableExtensions();
         for(auto o : extensions)
             std::cout<<'\t'<<o.extensionName<<'\n';
 
         //Layers
-        LOG("Available layers\n",0,0,1)
+        LOG("Available layers\n",0,1)
         auto layers = m_instance.getAvailableLayers();
         for(auto o : layers)
             std::cout<<'\t'<<o.layerName<<'\n';
 
         //Device Extensions
 
-        LOG("Device Extensions\n",0,0,1)
+        LOG("Device Extensions\n",0,1)
         auto deviceExtensions = m_gpu->getDeviceExtensions();
         for(VkExtensionProperties pt : deviceExtensions)
             std::cout<<"\t"<<pt.extensionName<<" Version: " <<pt.specVersion<<'\n';

@@ -47,6 +47,8 @@ namespace craft{
 
         VkExtent2D getExtent() const;
 
+        VkFormat getSwapChainFormat();
+
     private:
 
         struct SwapChainData{

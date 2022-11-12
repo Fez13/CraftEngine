@@ -35,7 +35,7 @@ namespace craft{
 
         for(const auto& extension : extensions){
             if(!checkExtension(availableExtension,extension)){
-                LOG(std::string("Couldn't find extension... \n\tExtension name: ") + extension,0,0,0)
+                LOG(std::string("Couldn't find extension... \n\tExtension name: ") + extension,0,0)
                 continue;
             }
             pp_extensions.push_back(extension.c_str());
@@ -50,7 +50,7 @@ namespace craft{
 
         for (const auto & layer : layers) {
             if (!checkLayer(availableLayers, layer)){
-                LOG(std::string("Couldn't find layer... \n\tLayer name: ") + layer,0,0,0)
+                LOG(std::string("Couldn't find layer... \n\tLayer name: ") + layer,0,0)
                 continue;
             }
             pp_layers.push_back(layer.c_str());
@@ -101,7 +101,7 @@ namespace craft{
 
         for(const auto& extension : extensions){
             if(!checkExtension(availableExtension,extension)){
-                LOG(std::string("Couldn't find extension... \n\tExtension name: ") + extension,0,0,0)
+                LOG(std::string("Couldn't find extension... \n\tExtension name: ") + extension,0,0)
                 continue;
             }
             pp_extensions.push_back(extension.c_str());
@@ -119,7 +119,7 @@ namespace craft{
 
         for (const auto & layer : layers) {
             if (!checkLayer(availableLayers, layer)){
-                LOG( std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n',0,0,0)
+                LOG( std::string("Couldn't find layer... \n\tLayer name: ") + layer << '\n',0,0)
                 continue;
             }
             pp_layers.push_back(layer.c_str());

@@ -17,7 +17,7 @@
 
 namespace craft{
 
-    //This shouden't be in the renderer file, it should be in a "Shader class" instead
+    //This shouldn't be in the renderer file, it should be in a "Shader class" instead
     VkShaderModule createShaderModule(std::vector<char>, VkDevice&);
 
 
@@ -43,6 +43,9 @@ namespace craft{
 
     private:
 
+        //May be public in the future since it will be personalised by the user
+        void createRenderPass();
+
         vk_window *m_mainWindow;
 
         std::vector<VkDynamicState> m_dynamicStates;
@@ -52,11 +55,17 @@ namespace craft{
         std::vector<char> m_frag;
         std::vector<char> m_vert;
 
-        VkShaderModule m_fragModule;
-        VkShaderModule m_vertexModule;
+        VkShaderModule m_fragModule{};
+        VkShaderModule m_vertexModule{};
 
         VkPolygonMode m_polygonMode = VK_POLYGON_MODE_FILL;
 
+        //May be removed from the class
+        VkPipelineLayout m_pipelineLayout;
+
+        VkPipeline m_pipeline;
+
+        VkRenderPass m_renderPass;
 
     };
 }
