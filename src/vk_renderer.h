@@ -13,6 +13,7 @@
 #include "utils.hpp"
 #include "debug/log.h"
 #include "vk_window.h"
+#include "vk_device_abstraction.h"
 
 
 namespace craft{
@@ -26,7 +27,7 @@ namespace craft{
     class vk_renderer {
     public:
 
-        explicit vk_renderer(VkDevice mainDevice);
+        explicit vk_renderer(deviceAbstraction *mainDevice);
         explicit vk_renderer()= default;
 
         void loadShaders(const char* vert_path,const char* frag_path);
@@ -39,6 +40,8 @@ namespace craft{
 
         void setPolygonMode(VkPolygonMode);
 
+        VkRenderPass getRenderPass() const;
+
         void free();
 
     private:
@@ -50,7 +53,7 @@ namespace craft{
 
         std::vector<VkDynamicState> m_dynamicStates;
 
-        VkDevice m_mainDevice;
+        deviceAbstraction *m_mainDevice;
 
         std::vector<char> m_frag;
         std::vector<char> m_vert;

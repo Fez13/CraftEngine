@@ -34,7 +34,7 @@ namespace craft{
         float priority = 1.0f;
         m_gpu->createDeviceAbstraction(m_window.findQueueFamily(m_gpu->getPhysicalDevice()), "QUEUE_KHR", priority,{VK_KHR_SWAPCHAIN_EXTENSION_NAME});
 
-        m_window.createSwapChain(m_gpu->getDeviceAbstraction("QUEUE_KHR"),m_gpu->getAllUsedFamilies());
+        m_window.createSwapChain(m_gpu->getDeviceAbstraction("QUEUE_KHR").device,m_gpu->getAllUsedFamilies());
 
         std::string vert = "../src/shaders/compiled/vert.spv";
         std::string frag = "../src/shaders/compiled/frag.spv";
@@ -42,7 +42,7 @@ namespace craft{
         compile("../src/shaders/verts/basic_vert.vert", EMPTY, vert, true);
         compile("../src/shaders/frags/basic_frag.frag", EMPTY, frag, true);
 
-        m_rendered = vk_renderer(m_gpu->getDeviceAbstraction("QUEUE_KHR"));
+        m_rendered = vk_renderer(&m_gpu->getDeviceAbstraction("QUEUE_KHR"));
         m_rendered.loadShaders(vert.c_str(),frag.c_str());
         m_rendered.setMainWindow(&m_window);
         m_rendered.setDynamicStates({
@@ -50,6 +50,7 @@ namespace craft{
                 VK_DYNAMIC_STATE_SCISSOR
         });
         m_rendered.createShaderPipeline();
+        m_window.createFrameBuffers(m_gpu->getDeviceAbstraction("QUEUE_KHR").device,m_rendered.getRenderPass());
 
 
     }
@@ -83,7 +84,7 @@ namespace craft{
         while (!glfwWindowShouldClose(m_window.mainWindow)) {
 
 
-            m_window.update(m_gpu->getDeviceAbstraction("QUEUE_KHR"));
+            m_window.update(m_gpu->getDeviceAbstraction("QUEUE_KHR").device);
             glfwPollEvents();
         }
         return 0;
@@ -91,7 +92,7 @@ namespace craft{
 
     void App::clean() {
         m_rendered.free();
-        m_window.free(m_instance.getInstance(),m_gpu->getDeviceAbstraction("QUEUE_KHR"));
+        m_window.free(m_instance.getInstance(),m_gpu->getDeviceAbstraction("QUEUE_KHR").device);
         m_gpu->free();
         glfwTerminate();
     }

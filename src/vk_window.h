@@ -31,6 +31,8 @@ namespace craft{
 
         void createSwapChainProperties(const VkPhysicalDevice& device) const;
 
+        void createFrameBuffers(const VkDevice& device,const VkRenderPass&);
+
         void setWindowName(const std::string &newName) const;
 
         void setWindowSize(const glm::ivec2 &newSize);
@@ -72,6 +74,7 @@ namespace craft{
 
             std::vector<VkImage> images;
             std::vector<VkImageView> imagesViews;
+            std::vector<VkFramebuffer> frameBuffers;
         };
 
         mutable uint32_t m_queueFamily;

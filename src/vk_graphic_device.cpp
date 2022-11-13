@@ -28,7 +28,6 @@ namespace craft{
             throw std::runtime_error("There is not vulkan gpu available with the requested features");
 
         //Creates the main abstract device
-
         uint32_t queueFamilyIndex = getSuitableQueueFamily(mainInstance, [](const VkQueueFamilyProperties & fp){
             if(!(fp.queueFlags & VK_QUEUE_GRAPHICS_BIT))
                 return false;
@@ -36,7 +35,6 @@ namespace craft{
         });
         float priority = 1.0f;
         createDeviceAbstraction(queueFamilyIndex,"main",priority);
-
     }
 
     bool graphicProcessor::deviceSuitable(VkPhysicalDevice const &device,const std::vector<std::function<bool(VkPhysicalDeviceProperties&,VkPhysicalDeviceFeatures&)>> &checks){
@@ -65,16 +63,16 @@ namespace craft{
         throw std::runtime_error("There is not queue family with requested capabilities");
     }
 
-    VkDevice &graphicProcessor::getDeviceAbstraction(std::string name) {
+    deviceAbstraction &graphicProcessor::getDeviceAbstraction(std::string name) {
         for (auto &m_mainDeviceAbstraction: m_mainDeviceAbstractions)
             if (m_mainDeviceAbstraction.name == name)
-                return m_mainDeviceAbstraction.device;
+                return m_mainDeviceAbstraction;
         throw std::runtime_error("There is not deviceAbstraction with requested name");
     }
 
     void graphicProcessor::free() {
         for(const auto& device : m_mainDeviceAbstractions)
-            vkDestroyDevice(device.device, nullptr);
+            device.free();
         m_mainDeviceAbstractions.clear();
     }
 
@@ -120,9 +118,9 @@ namespace craft{
         deviceAbstraction newDevice(name,VkDevice{},VkQueue{},queueIndex);
 
         if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&newDevice.device) != VK_SUCCESS) {
-            throw std::runtime_error("Error creating a virtual device");
+            LOG("Error creating a virtual device",999,-1)
+            exit(1);
         }
-        newDevice.findQueue();
         m_mainDeviceAbstractions.push_back(newDevice);
     }
 
@@ -150,4 +148,5 @@ namespace craft{
         vkEnumerateDeviceExtensionProperties(m_mainDevice, nullptr,&extensionCount, pts.data());
         return pts;
     }
+
 }

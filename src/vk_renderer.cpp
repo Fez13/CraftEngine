@@ -31,7 +31,7 @@ namespace craft{
         return in;
     }
 
-    vk_renderer::vk_renderer(VkDevice mainDevice) {
+    vk_renderer::vk_renderer(deviceAbstraction *mainDevice){
         m_mainWindow = nullptr;
         m_pipelineLayout = nullptr;
         m_renderPass = nullptr;
@@ -47,8 +47,8 @@ namespace craft{
         m_vert = readBinFile(vert_path);
         m_frag = readBinFile(frag_path);
 
-        m_vertexModule = createShaderModule(m_vert,m_mainDevice);
-        m_fragModule = createShaderModule(m_frag,m_mainDevice);
+        m_vertexModule = createShaderModule(m_vert,m_mainDevice->device);
+        m_fragModule = createShaderModule(m_frag,m_mainDevice->device);
     }
 
     void vk_renderer::createShaderPipeline() {
@@ -174,7 +174,7 @@ namespace craft{
         pipelineLayoutCreateInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutCreateInfo.pPushConstantRanges = nullptr; // Optional
 
-        if (vkCreatePipelineLayout(m_mainDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
+        if (vkCreatePipelineLayout(m_mainDevice->device, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
             LOG("Fail creating a pipelineLayout",999,-1)
             exit(1);
         }
@@ -201,11 +201,13 @@ namespace craft{
         graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
         graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
 
-        if (vkCreateGraphicsPipelines(m_mainDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_pipeline) != VK_SUCCESS) {
+        if (vkCreateGraphicsPipelines(m_mainDevice->device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_pipeline) != VK_SUCCESS) {
             LOG("Error initializing the pipeline...",999,-1)
             exit(1);
         }
 
+        //Device command pool
+        m_mainDevice->createCommandPool();
     }
 
     void vk_renderer::setMainWindow(vk_window *mainWindow) {
@@ -213,11 +215,11 @@ namespace craft{
     }
 
     void vk_renderer::free() {
-        vkDestroyPipeline(m_mainDevice,m_pipeline, nullptr);
-        vkDestroyRenderPass(m_mainDevice,m_renderPass, nullptr);
-        vkDestroyPipelineLayout(m_mainDevice,m_pipelineLayout, nullptr);
-        vkDestroyShaderModule(m_mainDevice,m_vertexModule, nullptr);
-        vkDestroyShaderModule(m_mainDevice,m_fragModule, nullptr);
+        vkDestroyPipeline(m_mainDevice->device,m_pipeline, nullptr);
+        vkDestroyRenderPass(m_mainDevice->device,m_renderPass, nullptr);
+        vkDestroyPipelineLayout(m_mainDevice->device,m_pipelineLayout, nullptr);
+        vkDestroyShaderModule(m_mainDevice->device,m_vertexModule, nullptr);
+        vkDestroyShaderModule(m_mainDevice->device,m_fragModule, nullptr);
     }
 
     void vk_renderer::setPolygonMode(VkPolygonMode mode) {
@@ -257,10 +259,14 @@ namespace craft{
         renderPassCreateInfo.subpassCount = 1;
         renderPassCreateInfo.pSubpasses = &subpassDescription;
 
-        if (vkCreateRenderPass(m_mainDevice, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
+        if (vkCreateRenderPass(m_mainDevice->device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
             LOG("Couldn't initialize the render pass...",999,-1)
             exit(1);
         }
+    }
+
+    VkRenderPass vk_renderer::getRenderPass() const {
+        return m_renderPass;
     }
 
 }

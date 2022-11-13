@@ -14,6 +14,9 @@ namespace craft{
 
     void vk_window::free(const VkInstance& instance, const VkDevice &device) const {
 
+        for(const auto& fb : m_swapChain.frameBuffers)
+            vkDestroyFramebuffer(device,fb, nullptr);
+
         for(const auto& iv : m_swapChain.imagesViews)
             vkDestroyImageView(device, iv, nullptr);
 
@@ -206,6 +209,33 @@ namespace craft{
 
     VkFormat vk_window::getSwapChainFormat() {
         return m_swapChain.format.format;
+    }
+
+    void vk_window::createFrameBuffers(VkDevice const &device, VkRenderPass const &renderPass) {
+        m_swapChain.frameBuffers.resize(m_swapChain.imagesViews.size());
+
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.width = getExtent().width;
+        framebufferInfo.height = getExtent().height;
+        framebufferInfo.layers = 1;
+
+        for (size_t i = 0; i < m_swapChain.imagesViews.size(); i++) {
+            VkImageView attachments[] = {
+                    m_swapChain.imagesViews[i]
+            };
+            framebufferInfo.pAttachments = attachments;
+
+            if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, & m_swapChain.frameBuffers[i]) != VK_SUCCESS) {
+               LOG("Error creating frame buffers...",999,-1)
+               exit(1);
+            }
+
+        }
+
     }
 
     void vk_window::SwapChain::UpdateImages(const VkDevice& device) {

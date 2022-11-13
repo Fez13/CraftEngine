@@ -10,6 +10,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "debug/log.h"
+#include "vk_device_abstraction.h"
+
 namespace craft{
 
 
@@ -22,7 +25,7 @@ namespace craft{
 
         uint32_t getSuitableQueueFamily(VkInstance &mainInstance, std::function<bool(const VkQueueFamilyProperties &)> checks);
 
-        VkDevice &getDeviceAbstraction(std::string name);
+        deviceAbstraction &getDeviceAbstraction(std::string name);
 
         VkQueue &getDeviceQueue(std::string &name);
 
@@ -39,26 +42,6 @@ namespace craft{
         void free();
 
     private:
-
-        struct deviceAbstraction{
-        public:
-            std::string name;
-            VkDevice device;
-            VkQueue queue;
-            uint32_t family;
-
-            void findQueue(){
-                vkGetDeviceQueue(device, family, 0, &queue);
-            };
-
-            deviceAbstraction(std::string name, VkDevice device,VkQueue queue,uint32_t family){
-                this->name = std::move(name);
-                this->device = device;
-                this->queue = queue;
-                this->family = family;
-            };
-
-        };
 
         VkPhysicalDevice m_mainDevice;
 
