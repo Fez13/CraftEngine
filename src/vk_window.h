@@ -51,6 +51,12 @@ namespace craft{
 
         VkFormat getSwapChainFormat();
 
+        void getNextSwapChainImage(uint32_t &index,VkSemaphore finish,VkDevice device);
+
+        VkFramebuffer getFrameBuffer(uint32_t index) const;
+
+        VkPresentInfoKHR getSubmitImageInfo(uint32_t index, VkSemaphore wait[]);
+
     private:
 
         struct SwapChainData{

@@ -35,7 +35,11 @@ namespace craft{
         m_mainWindow = nullptr;
         m_pipelineLayout = nullptr;
         m_renderPass = nullptr;
+        m_pipeline = nullptr;
         m_mainDevice = mainDevice;
+        m_clearColor = {0,0,0,1};
+        m_countOfVertices = 0;
+        m_verticesOffset = 0;
     }
 
     void vk_renderer::setDynamicStates(const std::vector<VkDynamicState> &states) {
@@ -100,8 +104,8 @@ namespace craft{
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = (float) m_mainWindow->getExtent().width;
-        viewport.height = (float) m_mainWindow->getExtent().height;
+        viewport.width = static_cast<float>(m_mainWindow->getExtent().width);
+        viewport.height = static_cast<float>(m_mainWindow->getExtent().height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -206,8 +210,21 @@ namespace craft{
             exit(1);
         }
 
-        //Device command pool
-        m_mainDevice->createCommandPool();
+        m_mainDevice->createFence(VK_FENCE_CREATE_SIGNALED_BIT);
+        //WILL CHANGE
+        VkSemaphoreCreateInfo semaphoreCreateInfo{};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        if(vkCreateSemaphore(m_mainDevice->device, &semaphoreCreateInfo, nullptr, &m_waitImage) != VK_SUCCESS){
+            LOG("Fail creating the semaphore...",999,-1)
+            exit(1);
+        }
+        if(vkCreateSemaphore(m_mainDevice->device, &semaphoreCreateInfo, nullptr, &m_waitRender) != VK_SUCCESS){
+            LOG("Fail creating the semaphore...",999,-1)
+            exit(1);
+        }
+
+        //Command buffer
+        m_mainCommandBuffer = m_mainDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY,1);
     }
 
     void vk_renderer::setMainWindow(vk_window *mainWindow) {
@@ -215,6 +232,8 @@ namespace craft{
     }
 
     void vk_renderer::free() {
+        vkDestroySemaphore(m_mainDevice->device,m_waitRender, nullptr);
+        vkDestroySemaphore(m_mainDevice->device,m_waitImage, nullptr);
         vkDestroyPipeline(m_mainDevice->device,m_pipeline, nullptr);
         vkDestroyRenderPass(m_mainDevice->device,m_renderPass, nullptr);
         vkDestroyPipelineLayout(m_mainDevice->device,m_pipelineLayout, nullptr);
@@ -252,12 +271,24 @@ namespace craft{
         subpassDescription.colorAttachmentCount = 1;
         subpassDescription.pColorAttachments = &attachmentReference;
 
+
+        VkSubpassDependency dependency{};
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency.dstSubpass = 0;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = 0;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+
         VkRenderPassCreateInfo renderPassCreateInfo{};
         renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassCreateInfo.attachmentCount = 1;
         renderPassCreateInfo.pAttachments = &attachmentDescription;
         renderPassCreateInfo.subpassCount = 1;
         renderPassCreateInfo.pSubpasses = &subpassDescription;
+        renderPassCreateInfo.dependencyCount = 1;
+        renderPassCreateInfo.pDependencies = &dependency;
 
         if (vkCreateRenderPass(m_mainDevice->device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
             LOG("Couldn't initialize the render pass...",999,-1)
@@ -269,7 +300,97 @@ namespace craft{
         return m_renderPass;
     }
 
+    void vk_renderer::recordCommandBuffer(uint32_t index, VkCommandBuffer &buffer) {
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = 0; // Optional
+        beginInfo.pInheritanceInfo = nullptr; // Optional
+
+        if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS) {
+            LOG("Error recording command buffer, index: " + std::to_string(index),999,-1)
+            exit(1);
+        }
+
+        VkRenderPassBeginInfo renderPassBeginInfo{};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = m_renderPass;
+        renderPassBeginInfo.framebuffer = m_mainWindow->getFrameBuffer(index);
+        //Should be dynamic
+        renderPassBeginInfo.renderArea.offset = {0, 0};
+        renderPassBeginInfo.renderArea.extent = m_mainWindow->getExtent();
+
+        VkClearValue clearColor = {m_clearColor.x,m_clearColor.y,m_clearColor.z,m_clearColor.w};
+        renderPassBeginInfo.clearValueCount = 1;
+        renderPassBeginInfo.pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(m_mainWindow->getExtent().width);
+        viewport.height = static_cast<float>(m_mainWindow->getExtent().height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(buffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = m_mainWindow->getExtent();
+        vkCmdSetScissor(buffer, 0, 1, &scissor);
+
+        //TODO:WILL CHANGE, DO NOT FORGET TO REMOVE PLS
+        m_countOfVertices = 3;
+
+        vkCmdDraw(buffer, m_countOfVertices, 1, m_verticesOffset, 0);
+        vkCmdEndRenderPass(buffer);
+        if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
+            LOG("Error recording command buffer",999,-1)
+            exit(1);
+        }
+    }
+
+    void vk_renderer::setClearColor(glm::vec4 newColor) {
+        m_clearColor = newColor;
+    }
+
+    void vk_renderer::updateFrame() {
+        vkWaitForFences(m_mainDevice->device, 1, &m_mainDevice->fence, VK_TRUE, UINT64_MAX);
+        vkResetFences(m_mainDevice->device, 1, &m_mainDevice->fence);
+        uint32_t index;
+        m_mainWindow->getNextSwapChainImage(index,m_waitImage,m_mainDevice->device);
+
+        vkResetCommandBuffer(m_mainCommandBuffer, 0);
+        recordCommandBuffer(index,m_mainCommandBuffer);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        VkSemaphore waitSemaphores[] = {m_waitImage};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &m_mainCommandBuffer;
+
+        VkSemaphore signalSemaphores[] = {m_waitRender};
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+
+        if (vkQueueSubmit(m_mainDevice->queue, 1, &submitInfo, m_mainDevice->fence) != VK_SUCCESS) {
+            LOG("Fail submitting work to the gpu",999,-1)
+            exit(1);
+        }
+
+        VkPresentInfoKHR presentInfoKhr = m_mainWindow->getSubmitImageInfo(index,signalSemaphores);
+        vkQueuePresentKHR(m_mainDevice->queue, &presentInfoKhr);
+
+    }
 }
+
+
 
 
 

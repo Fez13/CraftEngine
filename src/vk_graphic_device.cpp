@@ -115,13 +115,13 @@ namespace craft{
         deviceCreateInfo.ppEnabledExtensionNames = gpuExtensions.data();
         deviceCreateInfo.enabledExtensionCount = gpuExtensions.size();
 
-        deviceAbstraction newDevice(name,VkDevice{},VkQueue{},queueIndex);
 
-        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&newDevice.device) != VK_SUCCESS) {
+        VkDevice newDevice;
+        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&newDevice) != VK_SUCCESS) {
             LOG("Error creating a virtual device",999,-1)
             exit(1);
         }
-        m_mainDeviceAbstractions.push_back(newDevice);
+        m_mainDeviceAbstractions.emplace_back(name,newDevice,VkQueue{},queueIndex);
     }
 
     const VkPhysicalDevice &graphicProcessor::getPhysicalDevice() {

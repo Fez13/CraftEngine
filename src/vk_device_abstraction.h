@@ -16,10 +16,18 @@ namespace craft{
         VkQueue queue;
         uint32_t family;
         VkCommandPool commandPool;
+        VkFence fence;
 
         void findQueue();
 
-        void createCommandPool();
+        VkCommandBuffer createCommandBuffer(VkCommandBufferLevel bufferLevel, uint32_t bufferCount) const;
+
+        void createFence(VkFenceCreateFlags flags);
+
+        //TODO
+        void SubmitWork();
+        //TODO
+        void SubmitWork(VkSemaphore toWait);
 
         void free() const;
 
@@ -29,7 +37,14 @@ namespace craft{
             this->queue = queue;
             this->family = family;
             commandPool = nullptr;
+            fence = nullptr;
+
+            createCommandPool();
+
         };
+    private:
+        void createCommandPool();
+
 
     };
 }
