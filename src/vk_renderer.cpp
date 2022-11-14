@@ -210,6 +210,8 @@ namespace craft{
             exit(1);
         }
 
+        m_mainWindow->createFrameBuffers(m_mainDevice->device,m_renderPass);
+        m_mainDevice->findQueue();
         m_mainDevice->createFence(VK_FENCE_CREATE_SIGNALED_BIT);
         //WILL CHANGE
         VkSemaphoreCreateInfo semaphoreCreateInfo{};

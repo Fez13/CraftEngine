@@ -239,15 +239,12 @@ namespace craft{
     }
 
     VkFramebuffer vk_window::getFrameBuffer(uint32_t index) const {
-        if(!m_swapChain.populated){
-            LOG("The swapChain has to be after requesting frameBuffer",1,0)
-            return nullptr;
-        }
-        if(index <= m_swapChain.frameBuffers.size())
+        if(index >= m_swapChain.frameBuffers.size())
         {
             LOG("FrameBuffer request out of array, returning last of the list",1,0)
             return m_swapChain.frameBuffers[m_swapChain.frameBuffers.size()];
         }
+        m_swapChain.frameBuffers[index];
         return m_swapChain.frameBuffers[index];
     }
 
@@ -255,16 +252,17 @@ namespace craft{
         vkAcquireNextImageKHR(device,m_swapChain.swapChainKhr, UINT64_MAX, finish, VK_NULL_HANDLE, &index);
     }
 
-    VkPresentInfoKHR vk_window::getSubmitImageInfo(uint32_t index, VkSemaphore wait[]) {
+    VkPresentInfoKHR vk_window::getSubmitImageInfo(uint32_t &index, VkSemaphore wait[]) {
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = wait;
-        VkSwapchainKHR swapChains[] = {m_swapChain.swapChainKhr};
+        m_swapChain.swapChainKhr_arr = {m_swapChain.swapChainKhr};
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
+        presentInfo.pSwapchains = &m_swapChain.swapChainKhr_arr;
         presentInfo.pImageIndices = &index;
+        presentInfo.pResults = nullptr;
         return presentInfo;
     }
 

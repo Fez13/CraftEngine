@@ -55,7 +55,7 @@ namespace craft{
 
         VkFramebuffer getFrameBuffer(uint32_t index) const;
 
-        VkPresentInfoKHR getSubmitImageInfo(uint32_t index, VkSemaphore wait[]);
+        VkPresentInfoKHR getSubmitImageInfo(uint32_t &index, VkSemaphore wait[]);
 
     private:
 
@@ -73,6 +73,8 @@ namespace craft{
             VkPresentModeKHR presentMode;
             VkExtent2D extent;
             VkSwapchainKHR swapChainKhr;
+
+            VkSwapchainKHR swapChainKhr_arr;
 
             void UpdateImages(const VkDevice& device);
 

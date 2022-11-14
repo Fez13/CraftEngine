@@ -86,6 +86,8 @@ namespace craft{
 
             m_window.update(m_gpu->getDeviceAbstraction("QUEUE_KHR").device);
             glfwPollEvents();
+            m_rendered.updateFrame();
+
         }
         return 0;
     }
