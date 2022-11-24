@@ -1,18 +1,18 @@
 #include "vk_graphic_device.h"
-#include "debug/time.h"
+#include "../debug/time.h"
 
 
 namespace craft{
 
-    graphicProcessor::graphicProcessor(VkInstance &mainInstance,const std::vector<std::function<bool(VkPhysicalDeviceProperties&,VkPhysicalDeviceFeatures&)>>& checks = {}) {
+    vk_graphic_device::vk_graphic_device(VkInstance &mainInstance, const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>>& checks = {}) {
 
         uint32_t devices = 0;
 
         vkEnumeratePhysicalDevices(mainInstance,&devices, nullptr);
 
-        if(devices == 0)
-            throw std::runtime_error("There is not vulkan gpu available...");
-
+        if(devices == 0){
+            LOG_TERMINAL("There is not vulkan gpu available...",999)
+        }
         m_availableDevices.resize(devices);
         vkEnumeratePhysicalDevices(mainInstance,&devices, m_availableDevices.data());
 
@@ -24,8 +24,9 @@ namespace craft{
             }
 
 
-        if(!pick)
-            throw std::runtime_error("There is not vulkan gpu available with the requested features");
+        if(!pick){
+            LOG_TERMINAL("There is not vulkan gpu available with the requested features",999)
+        }
 
         //Creates the main abstract device
         uint32_t queueFamilyIndex = getSuitableQueueFamily(mainInstance, [](const VkQueueFamilyProperties & fp){
@@ -37,7 +38,7 @@ namespace craft{
         createDeviceAbstraction(queueFamilyIndex,"main",priority);
     }
 
-    bool graphicProcessor::deviceSuitable(VkPhysicalDevice const &device,const std::vector<std::function<bool(VkPhysicalDeviceProperties&,VkPhysicalDeviceFeatures&)>> &checks){
+    bool vk_graphic_device::deviceSuitable(VkPhysicalDevice const &device, const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>> &checks){
         bool valid = true;
         VkPhysicalDeviceProperties deviceProperties;
         VkPhysicalDeviceFeatures deviceFeatures;
@@ -49,8 +50,8 @@ namespace craft{
             valid = validator(deviceProperties,deviceFeatures);
         return valid;
     }
-    uint32_t graphicProcessor::getSuitableQueueFamily(VkInstance &mainInstance,
-                                                      std::function<bool(const VkQueueFamilyProperties & fp)> checks) {
+    uint32_t vk_graphic_device::getSuitableQueueFamily(VkInstance &mainInstance,
+                                                       std::function<bool(const VkQueueFamilyProperties & fp)> checks) {
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(m_mainDevice, &families, nullptr);
 
@@ -60,30 +61,30 @@ namespace craft{
         for(uint32_t i = 0; i < queueFamilies.size(); i++)
             if(checks(queueFamilies[i]))
                 return i;
-        throw std::runtime_error("There is not queue family with requested capabilities");
+        LOG_TERMINAL("There is not queue family with requested capabilities",999)
     }
 
-    deviceAbstraction &graphicProcessor::getDeviceAbstraction(std::string name) {
+    deviceAbstraction &vk_graphic_device::getDeviceAbstraction(std::string name) {
         for (auto &m_mainDeviceAbstraction: m_mainDeviceAbstractions)
             if (m_mainDeviceAbstraction.name == name)
                 return m_mainDeviceAbstraction;
-        throw std::runtime_error("There is not deviceAbstraction with requested name");
+        LOG_TERMINAL("There is not deviceAbstraction with requested name",5)
     }
 
-    void graphicProcessor::free() {
+    void vk_graphic_device::free() {
         for(const auto& device : m_mainDeviceAbstractions)
             device.free();
         m_mainDeviceAbstractions.clear();
     }
 
-    VkQueue &graphicProcessor::getDeviceQueue(std::string &name) {
+    VkQueue &vk_graphic_device::getDeviceQueue(std::string &name, uint32_t queueIndex = 0) {
         for (auto &m_mainDeviceAbstraction: m_mainDeviceAbstractions)
             if (m_mainDeviceAbstraction.name == name)
-                return m_mainDeviceAbstraction.queue;
-        throw std::runtime_error("There is not deviceAbstraction with requested name");
+                return m_mainDeviceAbstraction.queue[queueIndex];
+        LOG_TERMINAL("There is not deviceAbstraction with requested name",5);
     }
 
-    std::vector<std::string> graphicProcessor::getAbstractionsData() {
+    std::vector<std::string> vk_graphic_device::getAbstractionsData() {
         std::vector<std::string> data_v;
 
         std::string data;
@@ -98,7 +99,7 @@ namespace craft{
         return data_v;
     }
 
-    void graphicProcessor::createDeviceAbstraction(uint32_t queueIndex, const std::string& name, float &priority,std::vector<const char*> gpuExtensions,VkPhysicalDeviceFeatures features) {
+    void vk_graphic_device::createDeviceAbstraction(uint32_t queueIndex, const std::string& name, float &priority, std::vector<const char*> gpuExtensions, VkPhysicalDeviceFeatures features) {
 
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.queueFamilyIndex = queueIndex;
@@ -117,18 +118,18 @@ namespace craft{
 
 
         VkDevice newDevice;
-        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&newDevice) != VK_SUCCESS) {
-            LOG("Error creating a virtual device",999,-1)
-            exit(1);
+        if(vkCreateDevice(m_mainDevice,&deviceCreateInfo, nullptr,&newDevice) != VK_SUCCESS){
+            LOG_TERMINAL("Error creating a virtual device",999)
         }
-        m_mainDeviceAbstractions.emplace_back(name,newDevice,VkQueue{},queueIndex);
+
+        m_mainDeviceAbstractions.emplace_back(name,newDevice,queueIndex);
     }
 
-    const VkPhysicalDevice &graphicProcessor::getPhysicalDevice() {
+    const VkPhysicalDevice &vk_graphic_device::getPhysicalDevice() {
         return m_mainDevice;
     }
 
-    std::vector<uint32_t> graphicProcessor::getAllUsedFamilies() {
+    std::vector<uint32_t> vk_graphic_device::getAllUsedFamilies() {
         std::vector<uint32_t> indices;
         for(const deviceAbstraction &abstraction : m_mainDeviceAbstractions)
             indices.push_back(abstraction.family);
@@ -138,7 +139,7 @@ namespace craft{
         return indices;
     }
 
-    std::vector<VkExtensionProperties> graphicProcessor::getDeviceExtensions() {
+    std::vector<VkExtensionProperties> vk_graphic_device::getDeviceExtensions() {
 
         std::vector<VkExtensionProperties> pts;
         uint32_t extensionCount = 0;
@@ -148,5 +149,7 @@ namespace craft{
         vkEnumerateDeviceExtensionProperties(m_mainDevice, nullptr,&extensionCount, pts.data());
         return pts;
     }
+
+    vk_graphic_device::vk_graphic_device() : m_mainDevice(nullptr){}
 
 }

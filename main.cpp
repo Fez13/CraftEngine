@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "src/App.h"
+#include "src/core/App.h"
 
 int main() {
 

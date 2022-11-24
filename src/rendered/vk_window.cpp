@@ -1,25 +1,26 @@
 #include "vk_window.h"
 
 namespace craft{
+
+    vk_window* pMainWindow;
+
     vk_window::vk_window(glm::ivec2 windowSize, uint32_t refreshRate) : m_refreshRate(refreshRate) , m_windowSize(windowSize), surface(){
 
         glfwWindowHint(GLFW_REFRESH_RATE,60);
-        glfwWindowHint(GLFW_RESIZABLE,GLFW_TRUE);
+
+        //Todo: Should be RESIZABLE
+        glfwWindowHint(GLFW_RESIZABLE,GLFW_FALSE);
         mainWindow = glfwCreateWindow(windowSize.x, windowSize.y, "Craft", nullptr, nullptr);
 
-        if(mainWindow == nullptr)
-            throw std::runtime_error("Fail creating vk_window, can be related to extensions errors");
-
+        if(mainWindow == nullptr){
+            LOG_TERMINAL("Fail creating vk_window, can be related to extensions errors",999);
+        }
+        pMainWindow = this;
     }
 
     void vk_window::free(const VkInstance& instance, const VkDevice &device) const {
 
-        for(const auto& fb : m_swapChain.frameBuffers)
-            vkDestroyFramebuffer(device,fb, nullptr);
-
-        for(const auto& iv : m_swapChain.imagesViews)
-            vkDestroyImageView(device, iv, nullptr);
-
+        cleanFrameBuffers(device);
         glfwDestroyWindow(mainWindow);
         vkDestroySwapchainKHR(device,m_swapChain.swapChainKhr, nullptr);
         vkDestroySurfaceKHR(instance,surface, nullptr);
@@ -29,7 +30,7 @@ namespace craft{
 
     void vk_window::createSurface(VkInstance &instance) {
         if(glfwCreateWindowSurface(instance,mainWindow, nullptr,&surface) != VK_SUCCESS){
-            throw std::runtime_error("Error creating windowSurface");
+           LOG_TERMINAL("Error creating windowSurface",999);
         }
     }
 
@@ -51,9 +52,10 @@ namespace craft{
     }
 
     uint32_t vk_window::findQueueFamily(VkPhysicalDevice mainDevice) const {
-        if(!m_swapChainData.populated)
-            throw std::runtime_error("You can´t find a queue family without calling createSwapChainProperties before");
-
+        if(!m_swapChainData.populated){
+            LOG_TERMINAL("You can´t find a queue family without calling createSwapChainProperties before",5)
+            return 0;
+        }
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(mainDevice, &families, nullptr);
 
@@ -76,7 +78,7 @@ namespace craft{
             return i;
         }
 
-        throw std::runtime_error("There is not queue family with requested capabilities");
+        LOG_TERMINAL("There is not queue family with requested capabilities",999)
     }
 
     void vk_window::createSwapChainProperties(VkPhysicalDevice const &device) const {
@@ -99,13 +101,13 @@ namespace craft{
     }
 
     void vk_window::createSwapChain(const VkDevice &device, const std::vector<uint32_t>& queueFamilies, uint32_t swapChainImageCount ) {
-        if(m_queueFamily == -1)
-            throw std::runtime_error("'createSwapChain' must be call after finding a queue");
-
-        if(queueFamilies.empty())
-            throw std::runtime_error("There are not available queueFamilies");
-
-        //TODO:Shit logged
+        m_mainDevice = device;
+        if(m_queueFamily == -1){
+            LOG_TERMINAL("'createSwapChain' must be call after finding a queue",999)
+        }
+        if(queueFamilies.empty()){
+            LOG_TERMINAL("There are not available queueFamilies",999)
+        }
         //Chose SwapChain characteristics
         bool didFind[3] = {false, false, false};
 
@@ -163,36 +165,34 @@ namespace craft{
         m_swapChainData.imagesInSwapChain  = swapChainImageCount_;
         m_swapChain.images.resize(m_swapChainData.imagesInSwapChain);
 
-        VkSwapchainCreateInfoKHR swapchainCreateInfoKhr{};
-        swapchainCreateInfoKhr.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfoKhr.surface = surface;
-        swapchainCreateInfoKhr.minImageCount = m_swapChainData.imagesInSwapChain;
-        swapchainCreateInfoKhr.imageFormat = m_swapChain.format.format;
-        swapchainCreateInfoKhr.imageColorSpace = m_swapChain.format.colorSpace;
-        swapchainCreateInfoKhr.imageExtent = m_swapChain.extent;
-        swapchainCreateInfoKhr.imageArrayLayers = 1;
-        swapchainCreateInfoKhr.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        VkSwapchainCreateInfoKHR swapChainInfo = {};
+        swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapChainInfo.surface = surface;
+        swapChainInfo.minImageCount = m_swapChainData.imagesInSwapChain;
+        swapChainInfo.imageFormat = m_swapChain.format.format;
+        swapChainInfo.imageColorSpace = m_swapChain.format.colorSpace;
+        swapChainInfo.imageExtent = m_swapChain.extent;
+        swapChainInfo.imageArrayLayers = 1;
+        swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         if(queueFamilies.size() != 1){
-            swapchainCreateInfoKhr.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            swapchainCreateInfoKhr.queueFamilyIndexCount = 2;
-            swapchainCreateInfoKhr.pQueueFamilyIndices = queueFamilies.data();
+            m_swapChainInfoStatic.shm = VK_SHARING_MODE_CONCURRENT;
+            m_swapChainInfoStatic.queueFamilyIndexCount = 2;
+            m_swapChainInfoStatic.queueFamilyIndices = queueFamilies.data();
         }
         else{
-            swapchainCreateInfoKhr.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            swapchainCreateInfoKhr.queueFamilyIndexCount = 0; // Optional
-            swapchainCreateInfoKhr.pQueueFamilyIndices = nullptr; // Optional
+            m_swapChainInfoStatic.shm = VK_SHARING_MODE_EXCLUSIVE;
+            m_swapChainInfoStatic.queueFamilyIndexCount = 0;
+            m_swapChainInfoStatic.queueFamilyIndices = nullptr;
         }
 
-        swapchainCreateInfoKhr.preTransform = m_swapChainData.capabilities.currentTransform;
-        swapchainCreateInfoKhr.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        swapChainInfo.preTransform = m_swapChainData.capabilities.currentTransform;
+        swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        swapChainInfo.presentMode = m_swapChain.presentMode;
+        swapChainInfo.clipped = VK_TRUE;
+        swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        swapchainCreateInfoKhr.presentMode = m_swapChain.presentMode;
-        swapchainCreateInfoKhr.clipped = VK_TRUE;
-        swapchainCreateInfoKhr.oldSwapchain = VK_NULL_HANDLE;
-
-        if (vkCreateSwapchainKHR(device, &swapchainCreateInfoKhr, nullptr, &m_swapChain.swapChainKhr) != VK_SUCCESS)
-            throw std::runtime_error("Fail creating the swapChain");
+        createSwapChain(device);
 
         m_swapChain.UpdateImages(device);
         m_swapChain.UpdateImageViews(device);
@@ -211,13 +211,12 @@ namespace craft{
         return m_swapChain.format.format;
     }
 
-    void vk_window::createFrameBuffers(VkDevice const &device, VkRenderPass const &renderPass) {
+    void vk_window::createFrameBuffers(VkDevice const &device) {
         m_swapChain.frameBuffers.resize(m_swapChain.imagesViews.size());
-
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.renderPass = m_renderPass;
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.width = getExtent().width;
         framebufferInfo.height = getExtent().height;
@@ -229,9 +228,8 @@ namespace craft{
             };
             framebufferInfo.pAttachments = attachments;
 
-            if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, & m_swapChain.frameBuffers[i]) != VK_SUCCESS) {
-               LOG("Error creating frame buffers...",999,-1)
-               exit(1);
+            if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &m_swapChain.frameBuffers[i]) != VK_SUCCESS){
+               LOG_TERMINAL("Error creating frame buffers...",999)
             }
 
         }
@@ -266,6 +264,48 @@ namespace craft{
         return presentInfo;
     }
 
+    void vk_window::cleanFrameBuffers(const VkDevice &mainDevice) const{
+        for(const auto& fb : m_swapChain.frameBuffers)
+            vkDestroyFramebuffer(mainDevice,fb, nullptr);
+
+        for(const auto& iv : m_swapChain.imagesViews)
+            vkDestroyImageView(mainDevice, iv, nullptr);
+    }
+
+    void vk_window::setWindowSizeNoUpdate(glm::ivec2 newSize) {
+        m_windowSize = newSize;
+        m_swapChain.extent = m_swapChainData.capabilities.currentExtent;
+    }
+
+    void vk_window::createSwapChain(const VkDevice device) {
+        VkSwapchainCreateInfoKHR swapChainInfo = {};
+        swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapChainInfo.surface = surface;
+        swapChainInfo.minImageCount = m_swapChainData.imagesInSwapChain;
+        swapChainInfo.imageFormat = m_swapChain.format.format;
+        swapChainInfo.imageColorSpace = m_swapChain.format.colorSpace;
+        swapChainInfo.imageExtent = m_swapChain.extent;
+        swapChainInfo.imageArrayLayers = 1;
+        swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        swapChainInfo.preTransform = m_swapChainData.capabilities.currentTransform;
+        swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        swapChainInfo.presentMode = m_swapChain.presentMode;
+        swapChainInfo.clipped = VK_TRUE;
+        swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
+        swapChainInfo.imageSharingMode = m_swapChainInfoStatic.shm;
+        swapChainInfo.queueFamilyIndexCount = m_swapChainInfoStatic.queueFamilyIndexCount;
+        swapChainInfo.pQueueFamilyIndices = m_swapChainInfoStatic.queueFamilyIndices;
+
+        if (vkCreateSwapchainKHR(device, &swapChainInfo, nullptr, &m_swapChain.swapChainKhr) != VK_SUCCESS){
+            LOG_TERMINAL("Fail creating the swapChain",999)
+        }
+
+    }
+
+    void vk_window::setRenderPass(VkRenderPass newRenderPass) {
+        m_renderPass = newRenderPass;
+    }
+
     void vk_window::SwapChain::UpdateImages(const VkDevice& device) {
 
         uint32_t currentImageCount = 0;
@@ -274,8 +314,8 @@ namespace craft{
         images.resize(currentImageCount);
         vkGetSwapchainImagesKHR(device,swapChainKhr,&currentImageCount,images.data());
 
-        //if(currentImageCount != images.size())
-        //    std::cout<<"WARNING, the n of images in the swap-chain is not the expected\n\t Expected: "<<images.size()<<" Received: "<<currentImageCount<<'\n';
+        if(currentImageCount != images.size())
+            LOG("WARNING, the n of images in the swap-chain is not the expected\n\t Expected: " + std::to_string(images.size()) + ", Received: " + std::to_string(currentImageCount),2,0)
     }
 
     void vk_window::SwapChain::UpdateImageViews(const VkDevice& device) {
@@ -300,8 +340,9 @@ namespace craft{
 
         for(uint32_t i = 0; i<imagesViews.size(); i++){
             info.image = images[i];
-            if (vkCreateImageView(device, &info, nullptr, &imagesViews[i]) != VK_SUCCESS)
-                throw std::runtime_error("Fail creating a image view...");
+            if (vkCreateImageView(device, &info, nullptr, &imagesViews[i]) != VK_SUCCESS){
+                LOG_TERMINAL("Fail creating a image view...",999)
+            }
 
         }
 

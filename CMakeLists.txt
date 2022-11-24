@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(src/glm)
 LINK_DIRECTORIES(src/glm)
 
 
-add_executable(CraftEngine main.cpp src/App.cpp src/App.h src/utils.hpp src/vk_instance.cpp src/vk_instance.h src/vk_graphic_device.cpp src/vk_graphic_device.h src/vk_graphic_device.cpp src/vk_window.cpp src/vk_window.h src/shaders/compile_Spir_V.h src/shaders/compile_Spir_V.cpp src/vk_renderer.cpp src/vk_renderer.h src/debug/log.h src/debug/time.h src/debug/time.cpp src/debug/time.h src/vk_device_abstraction.cpp src/vk_device_abstraction.h)
+add_executable(CraftEngine main.cpp src/core/App.cpp src/core/App.h src/utils/utils.hpp src/rendered/vk_instance.cpp src/rendered/vk_instance.h src/gpu/vk_graphic_device.cpp src/gpu/vk_graphic_device.h src/gpu/vk_graphic_device.cpp src/rendered/vk_window.cpp src/rendered/vk_window.h src/shaders/compile_Spir_V.h src/shaders/compile_Spir_V.cpp src/rendered/vk_renderer.cpp src/rendered/vk_renderer.h src/debug/log.h src/debug/time.h src/debug/time.cpp src/debug/time.h src/gpu/vk_device_abstraction.cpp src/gpu/vk_device_abstraction.h src/gpu/vk_shader.cpp src/gpu/vk_shader.h src/gpu/vk_buffer.cpp src/gpu/vk_buffer.h src/gpu/mesh.h src/gpu/mesh.cpp)
 
 target_link_libraries(CraftEngine Vulkan::Vulkan)
 target_link_libraries(CraftEngine glfw)

@@ -14,13 +14,9 @@ namespace craft{
 
         VkInstance& getInstance();
 
-        static int setValidationLayers(const std::vector<std::string>& layers,VkInstanceCreateInfo &appInfo);
+        static std::vector<VkLayerProperties> getAvailableLayers() ;
 
-        static int setExtensions(const std::vector<std::string>& extensions,VkInstanceCreateInfo *appInfo);
-
-        static std::vector<VkLayerProperties> getAvailableLayers();
-
-        static std::vector<VkExtensionProperties> getAvailableExtensions();
+        static std::vector<VkExtensionProperties> getAvailableExtensions() ;
 
         ~vk_instance();
 
@@ -30,6 +26,9 @@ namespace craft{
 
         static bool checkExtension(const std::vector<VkExtensionProperties> &availableExtensions , const std::string& extension);
 
+        static std::vector<const char*> setAvailableLayers(const std::vector<std::string>& layers) ;
+
+        static std::vector<const char*> setAvailableExtensions(const std::vector<std::string>& extensions) ;
 
         VkInstance m_instance;
 

@@ -7,10 +7,10 @@
 #include <iostream>
 #include <vector>
 
-#include "utils.hpp"
+#include "../utils/utils.hpp"
 #include "glm.hpp"
 
-#include "debug/log.h"
+#include "../debug/log.h"
 
 namespace craft{
 
@@ -31,7 +31,7 @@ namespace craft{
 
         void createSwapChainProperties(const VkPhysicalDevice& device) const;
 
-        void createFrameBuffers(const VkDevice& device,const VkRenderPass&);
+        void createFrameBuffers(const VkDevice& device);
 
         void setWindowName(const std::string &newName) const;
 
@@ -40,6 +40,8 @@ namespace craft{
         glm::ivec2 getWindowSize() const;
 
         uint32_t getRefreshRate() const;
+
+        void cleanFrameBuffers(const VkDevice &mainDevice) const;
 
         void free(const VkInstance& instance,const VkDevice &KHRdevice) const;
 
@@ -53,11 +55,17 @@ namespace craft{
 
         void getNextSwapChainImage(uint32_t &index,VkSemaphore finish,VkDevice device);
 
+        void setWindowSizeNoUpdate(glm::ivec2 newSize);
+
         VkFramebuffer getFrameBuffer(uint32_t index) const;
 
         VkPresentInfoKHR getSubmitImageInfo(uint32_t &index, VkSemaphore wait[]);
 
+        void setRenderPass(VkRenderPass);
+
     private:
+
+        void createSwapChain(VkDevice device);
 
         struct SwapChainData{
             bool populated = false;
@@ -85,6 +93,13 @@ namespace craft{
             std::vector<VkFramebuffer> frameBuffers;
         };
 
+        struct swapChainInfo_static{
+            VkSharingMode shm;
+            uint32_t queueFamilyIndexCount;
+            const uint32_t* queueFamilyIndices;
+
+        };
+
         mutable uint32_t m_queueFamily;
 
         mutable SwapChainData m_swapChainData;
@@ -94,6 +109,12 @@ namespace craft{
         uint32_t m_refreshRate;
 
         glm::ivec2 m_windowSize;
+
+        swapChainInfo_static m_swapChainInfoStatic;
+
+        VkRenderPass m_renderPass;
+
+        VkDevice m_mainDevice;
     };
 
 }

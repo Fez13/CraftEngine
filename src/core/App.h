@@ -4,26 +4,30 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <cmath>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "glm/glm.hpp"
+#include "glm.hpp"
 
 //#define RELEASE
-#include "utils.hpp"
-#include "debug/log.h"
-#include "debug/time.h"
+#include "../utils/utils.hpp"
+#include "../debug/log.h"
+#include "../debug/time.h"
 
-#include "vk_instance.h"
-#include "vk_graphic_device.h"
-#include "vk_window.h"
-#include "shaders/compile_Spir_V.h"
-#include "vk_renderer.h"
+#include "../rendered/vk_instance.h"
+#include "../gpu/vk_graphic_device.h"
+#include "../rendered/vk_window.h"
+#include "../shaders/compile_Spir_V.h"
+#include "../rendered/vk_renderer.h"
+#include "../gpu/mesh.h"
+#include "../gpu/vk_buffer.h"
 
 
 namespace craft{
-    
+
+
     class App {
 
     public:
@@ -36,7 +40,7 @@ namespace craft{
 
     private:
 
-        std::unique_ptr<graphicProcessor> m_gpu;
+        vk_graphic_device m_gpu;
 
         vk_window m_window;
 

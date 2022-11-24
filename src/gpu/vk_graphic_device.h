@@ -10,24 +10,26 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "debug/log.h"
+#include "../debug/log.h"
 #include "vk_device_abstraction.h"
 
 namespace craft{
 
 
 
-    class graphicProcessor{
+    class vk_graphic_device{
 
     public:
 
-        graphicProcessor(VkInstance &mainInstance,const std::vector<std::function<bool(VkPhysicalDeviceProperties&,VkPhysicalDeviceFeatures&)>>& checks);
+        explicit vk_graphic_device(VkInstance &mainInstance, const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>>& checks);
+
+        explicit vk_graphic_device();
 
         uint32_t getSuitableQueueFamily(VkInstance &mainInstance, std::function<bool(const VkQueueFamilyProperties &)> checks);
 
         deviceAbstraction &getDeviceAbstraction(std::string name);
 
-        VkQueue &getDeviceQueue(std::string &name);
+        VkQueue &getDeviceQueue(std::string &name,uint32_t queueIndex );
 
         const VkPhysicalDevice &getPhysicalDevice();
 

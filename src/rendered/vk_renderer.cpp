@@ -3,33 +3,14 @@
 
 namespace craft{
 
-    VkShaderModule createShaderModule(std::vector<char> data,VkDevice &device){
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = data.size();
-        createInfo.pCode = reinterpret_cast<uint32_t*>(data.data());
+    vk_renderer* mainRendered;
 
-        VkShaderModule obj;
-        if(vkCreateShaderModule(device,&createInfo, nullptr,&obj) != VK_SUCCESS)
-            LOG("Fail creating shader module",999, -1)
-        return obj;
+    void window_size_callback(GLFWwindow* window, int width, int height)
+    {
+        //mainRendered->waitToFinish();
+        //mainRendered->updateWindowSize({width,height});
     }
 
-    static std::vector<char> readBinFile(const char* path){
-        std::ifstream file(path, std::ios::ate | std::ios::binary);
-
-        if(!file.is_open())
-            throw std::runtime_error("Fail opening binary file...\n\tPath: " + std::string(path));
-
-        auto file_s = (uint32_t)file.tellg();
-        std::vector<char> in(file_s);
-
-        file.seekg(0);
-        file.read(in.data(), file_s);
-        file.close();
-
-        return in;
-    }
 
     vk_renderer::vk_renderer(deviceAbstraction *mainDevice){
         m_mainWindow = nullptr;
@@ -40,6 +21,7 @@ namespace craft{
         m_clearColor = {0,0,0,1};
         m_countOfVertices = 0;
         m_verticesOffset = 0;
+        mainRendered = this;
     }
 
     void vk_renderer::setDynamicStates(const std::vector<VkDynamicState> &states) {
@@ -48,40 +30,28 @@ namespace craft{
 
 
     void vk_renderer::loadShaders(const char *vert_path, const char *frag_path) {
-        m_vert = readBinFile(vert_path);
-        m_frag = readBinFile(frag_path);
+        m_vert = graphics_shader(vert_path,m_mainDevice->device,VK_SHADER_STAGE_VERTEX_BIT);
+        m_frag = graphics_shader(frag_path,m_mainDevice->device,VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        m_vertexModule = createShaderModule(m_vert,m_mainDevice->device);
-        m_fragModule = createShaderModule(m_frag,m_mainDevice->device);
     }
 
     void vk_renderer::createShaderPipeline() {
 
         if(m_mainDevice == nullptr){
-            LOG("Rendered without main device",999,-1)
-            exit(1);
+            LOG_TERMINAL("Rendered without main device",999)
         }
         if(m_mainWindow == nullptr){
-            LOG("Rendered without main window",999,-1)
-            exit(1);
+            LOG_TERMINAL("Rendered without main window",999)
         }
+        m_usedFamilies = m_mainGpu->getAllUsedFamilies();
+        m_mainWindow->createSwapChain(m_mainDevice->device,m_usedFamilies);
 
         createRenderPass();
 
-        VkPipelineShaderStageCreateInfo createInfoVertex{};
-        createInfoVertex.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        createInfoVertex.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        createInfoVertex.module = m_vertexModule;
-        createInfoVertex.pName = "main";
+        shaderPair pair;
+        m_frag.populateShaderPair(pair);
+        m_vert.populateShaderPair(pair);
 
-        VkPipelineShaderStageCreateInfo createInfoFragment{};
-        createInfoFragment.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        createInfoFragment.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        createInfoFragment.module = m_fragModule;
-        createInfoFragment.pName = "main";
-
-
-        VkPipelineShaderStageCreateInfo stages[] = {createInfoVertex,createInfoFragment};
 
         VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
         dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -89,11 +59,18 @@ namespace craft{
         dynamicStateCreateInfo.pDynamicStates = m_dynamicStates.data();
 
         VkPipelineVertexInputStateCreateInfo inputStateCreateInfo{};
+
+        auto binding = vertex::getBindingDescription();
+        auto attributes = vertex::getAttributeDescription();
+
+
         inputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         inputStateCreateInfo.pNext = nullptr;
-        inputStateCreateInfo.pVertexAttributeDescriptions = nullptr;
-        inputStateCreateInfo.vertexAttributeDescriptionCount = 0;
-        inputStateCreateInfo.vertexBindingDescriptionCount = 0;
+        inputStateCreateInfo.pVertexAttributeDescriptions = attributes.data();
+        inputStateCreateInfo.pVertexBindingDescriptions = &binding;
+        inputStateCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+        inputStateCreateInfo.vertexBindingDescriptionCount = 1;
+
 
         VkPipelineInputAssemblyStateCreateInfo assemblyStateCreateInfo{};
         assemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -178,15 +155,14 @@ namespace craft{
         pipelineLayoutCreateInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutCreateInfo.pPushConstantRanges = nullptr; // Optional
 
-        if (vkCreatePipelineLayout(m_mainDevice->device, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
-            LOG("Fail creating a pipelineLayout",999,-1)
-            exit(1);
+        if (vkCreatePipelineLayout(m_mainDevice->device, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS){
+            LOG_TERMINAL("Fail creating a pipelineLayout",999)
         }
-
+        pair.createDouble();
         VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
         graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         graphicsPipelineCreateInfo.stageCount = 2;
-        graphicsPipelineCreateInfo.pStages = stages;
+        graphicsPipelineCreateInfo.pStages = pair.stages;
 
         graphicsPipelineCreateInfo.pVertexInputState = &inputStateCreateInfo;
         graphicsPipelineCreateInfo.pInputAssemblyState = &assemblyStateCreateInfo;
@@ -205,24 +181,21 @@ namespace craft{
         graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
         graphicsPipelineCreateInfo.basePipelineIndex = -1; // Optional
 
-        if (vkCreateGraphicsPipelines(m_mainDevice->device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_pipeline) != VK_SUCCESS) {
-            LOG("Error initializing the pipeline...",999,-1)
-            exit(1);
+        if (vkCreateGraphicsPipelines(m_mainDevice->device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_pipeline) != VK_SUCCESS){
+            LOG_TERMINAL("Error initializing the pipeline...",999)
         }
-
-        m_mainWindow->createFrameBuffers(m_mainDevice->device,m_renderPass);
-        m_mainDevice->findQueue();
+        m_mainWindow->setRenderPass(m_renderPass);
+        m_mainWindow->createFrameBuffers(m_mainDevice->device);
         m_mainDevice->createFence(VK_FENCE_CREATE_SIGNALED_BIT);
         //WILL CHANGE
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         if(vkCreateSemaphore(m_mainDevice->device, &semaphoreCreateInfo, nullptr, &m_waitImage) != VK_SUCCESS){
-            LOG("Fail creating the semaphore...",999,-1)
-            exit(1);
+            LOG_TERMINAL("Fail creating the semaphore...",999)
         }
+
         if(vkCreateSemaphore(m_mainDevice->device, &semaphoreCreateInfo, nullptr, &m_waitRender) != VK_SUCCESS){
-            LOG("Fail creating the semaphore...",999,-1)
-            exit(1);
+            LOG_TERMINAL("Fail creating the semaphore...",999)
         }
 
         //Command buffer
@@ -231,6 +204,7 @@ namespace craft{
 
     void vk_renderer::setMainWindow(vk_window *mainWindow) {
         m_mainWindow = mainWindow;
+        glfwSetWindowSizeCallback(mainWindow->mainWindow , window_size_callback);
     }
 
     void vk_renderer::free() {
@@ -239,8 +213,8 @@ namespace craft{
         vkDestroyPipeline(m_mainDevice->device,m_pipeline, nullptr);
         vkDestroyRenderPass(m_mainDevice->device,m_renderPass, nullptr);
         vkDestroyPipelineLayout(m_mainDevice->device,m_pipelineLayout, nullptr);
-        vkDestroyShaderModule(m_mainDevice->device,m_vertexModule, nullptr);
-        vkDestroyShaderModule(m_mainDevice->device,m_fragModule, nullptr);
+        m_vert.free();
+        m_frag.free();
     }
 
     void vk_renderer::setPolygonMode(VkPolygonMode mode) {
@@ -292,9 +266,8 @@ namespace craft{
         renderPassCreateInfo.dependencyCount = 1;
         renderPassCreateInfo.pDependencies = &dependency;
 
-        if (vkCreateRenderPass(m_mainDevice->device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
-            LOG("Couldn't initialize the render pass...",999,-1)
-            exit(1);
+        if (vkCreateRenderPass(m_mainDevice->device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS){
+            LOG_TERMINAL("Couldn't initialize the render pass...",999)
         }
     }
 
@@ -308,9 +281,8 @@ namespace craft{
         beginInfo.flags = 0; // Optional
         beginInfo.pInheritanceInfo = nullptr; // Optional
 
-        if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS) {
-            LOG("Error recording command buffer, index: " + std::to_string(index),999,-1)
-            exit(1);
+        if (vkBeginCommandBuffer(buffer, &beginInfo) != VK_SUCCESS){
+            LOG_TERMINAL("Error recording command buffer, index: " + std::to_string(index),999)
         }
 
         VkRenderPassBeginInfo renderPassBeginInfo{};
@@ -328,11 +300,17 @@ namespace craft{
         vkCmdBeginRenderPass(buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
+        VkDeviceSize offset[] = {0};
+
+        vkCmdBindVertexBuffers(buffer,0,1,draws.data(),offset);
+
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
         viewport.width = static_cast<float>(m_mainWindow->getExtent().width);
         viewport.height = static_cast<float>(m_mainWindow->getExtent().height);
+
+
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(buffer, 0, 1, &viewport);
@@ -345,11 +323,10 @@ namespace craft{
         //TODO:WILL CHANGE, DO NOT FORGET TO REMOVE PLS
         m_countOfVertices = 3;
 
-        vkCmdDraw(buffer, m_countOfVertices, 1, m_verticesOffset, 0);
+        vkCmdDraw(buffer, m_countOfVertices, 1, 0, 0);
         vkCmdEndRenderPass(buffer);
-        if (vkEndCommandBuffer(buffer) != VK_SUCCESS) {
-            LOG("Error recording command buffer",999,-1)
-            exit(1);
+        if (vkEndCommandBuffer(buffer) != VK_SUCCESS){
+            LOG_TERMINAL("Error recording command buffer",999)
         }
     }
 
@@ -381,15 +358,26 @@ namespace craft{
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(m_mainDevice->queue, 1, &submitInfo, m_mainDevice->fence) != VK_SUCCESS) {
-            LOG("Fail submitting work to the gpu",999,-1)
-            exit(1);
+        if (vkQueueSubmit(m_mainDevice->queue[0], 1, &submitInfo, m_mainDevice->fence) != VK_SUCCESS){
+            LOG_TERMINAL("Fail submitting work to the gpu",999)
         }
 
         VkPresentInfoKHR presentInfoKhr = m_mainWindow->getSubmitImageInfo(index,signalSemaphores);
-        vkQueuePresentKHR(m_mainDevice->queue, &presentInfoKhr);
-
+        vkQueuePresentKHR(m_mainDevice->queue[0], &presentInfoKhr);
     }
+
+    void vk_renderer::waitToFinish() const {
+        vkDeviceWaitIdle(m_mainDevice->device);
+    }
+
+    void vk_renderer::setMainGpu(vk_graphic_device *mainGpu) {
+        m_mainGpu = mainGpu;
+    }
+
+    void vk_renderer::draw_temporal(vk_buffer &buffer_) {
+        draws.push_back(buffer_.getBuffer());
+    }
+
 }
 
 

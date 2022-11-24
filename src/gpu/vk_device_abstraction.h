@@ -4,8 +4,9 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <vector>
 
-#include "debug/log.h"
+#include "../debug/log.h"
 
 namespace craft{
 
@@ -13,34 +14,34 @@ namespace craft{
     public:
         std::string name;
         VkDevice device;
-        VkQueue queue;
+        std::vector<VkQueue> queue;
         uint32_t family;
         VkCommandPool commandPool;
         VkFence fence;
 
-        void findQueue();
+        void findNewQueue();
 
         VkCommandBuffer createCommandBuffer(VkCommandBufferLevel bufferLevel, uint32_t bufferCount) const;
 
         void createFence(VkFenceCreateFlags flags);
 
-        //TODO
-        void SubmitWork();
+        void SubmitWork(VkCommandBuffer *commandBuffers,uint32_t count,uint32_t queueIndex = 0);
         //TODO
         void SubmitWork(VkSemaphore toWait);
 
+        void waitToFinish(uint32_t queueIndex = 0);
+
         void free() const;
 
-        deviceAbstraction(std::string name, VkDevice device,VkQueue queue,uint32_t family){
+        deviceAbstraction(std::string name, VkDevice device,uint32_t family){
             this->name = std::move(name);
             this->device = device;
-            this->queue = queue;
             this->family = family;
             commandPool = nullptr;
             fence = nullptr;
 
             createCommandPool();
-
+            findNewQueue();
         };
     private:
         void createCommandPool();

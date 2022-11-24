@@ -10,11 +10,14 @@
 #include "glm.hpp"
 
 
-#include "utils.hpp"
-#include "debug/log.h"
+#include "../utils/utils.hpp"
+#include "../debug/log.h"
 #include "vk_window.h"
-#include "vk_device_abstraction.h"
-
+#include "../gpu/vk_device_abstraction.h"
+#include "../gpu/vk_graphic_device.h"
+#include "../gpu/vk_shader.h"
+#include "../gpu/mesh.h"
+#include "../gpu/vk_buffer.h"
 
 namespace craft{
 
@@ -41,6 +44,8 @@ namespace craft{
 
         void setMainWindow(vk_window *mainWindow);
 
+        void setMainGpu(vk_graphic_device *mainGpu);
+
         void setPolygonMode(VkPolygonMode);
 
         VkRenderPass getRenderPass() const;
@@ -49,26 +54,30 @@ namespace craft{
 
         void updateFrame();
 
+        void waitToFinish() const;
+
         void free();
 
+        void draw_temporal(vk_buffer&);
+
     private:
+
+        void createRenderPass();
 
         void recordCommandBuffer(uint32_t index, VkCommandBuffer &buffer);
 
         //May be public in the future since it will be personalised by the user
-        void createRenderPass();
 
         vk_window *m_mainWindow;
+
+        std::vector<VkBuffer> draws;
 
         std::vector<VkDynamicState> m_dynamicStates;
 
         deviceAbstraction *m_mainDevice;
 
-        std::vector<char> m_frag;
-        std::vector<char> m_vert;
-
-        VkShaderModule m_fragModule{};
-        VkShaderModule m_vertexModule{};
+        graphics_shader m_frag;
+        graphics_shader m_vert;
 
         VkPolygonMode m_polygonMode = VK_POLYGON_MODE_FILL;
 
@@ -85,11 +94,15 @@ namespace craft{
 
         uint32_t m_verticesOffset;
 
+        std::vector<uint32_t> m_usedFamilies;
+
         VkCommandBuffer m_mainCommandBuffer;
 
         //Smartphones should not be in the renderer
         VkSemaphore m_waitImage;
         VkSemaphore m_waitRender;
+
+        vk_graphic_device *m_mainGpu;
 
     };
 }
