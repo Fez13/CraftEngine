@@ -3,12 +3,10 @@
 #include <cstdlib>
 #include <vector>
 
-#include "../glm/glm.hpp"
+#include "glm.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-
 
 namespace craft{
     struct vertex{
@@ -20,8 +18,6 @@ namespace craft{
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescription();
 
     };
-
-    class mesh {
-
-    };
 }
+
+

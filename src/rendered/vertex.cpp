@@ -1,7 +1,7 @@
-#include "mesh.h"
+#include "vertex.h"
 
 namespace craft{
-    //TODO: i think this should be in the mesh
+
     VkVertexInputBindingDescription vertex::getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = 0;

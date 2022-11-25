@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <cstring>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -21,7 +22,7 @@
 #include "../rendered/vk_window.h"
 #include "../shaders/compile_Spir_V.h"
 #include "../rendered/vk_renderer.h"
-#include "../gpu/mesh.h"
+#include "../rendered/mesh.h"
 #include "../gpu/vk_buffer.h"
 
 

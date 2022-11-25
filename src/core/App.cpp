@@ -1,5 +1,7 @@
 #include "App.h"
 
+#include "../rendered/vao.h"
+#include "../rendered/ebo.h"
 
 namespace craft{
 
@@ -76,38 +78,39 @@ namespace craft{
 
 
         std::vector<vertex> vertices{
-                {{0,-0.5f,0},{1.0f,0,0,1}},
-                {{0.5f,0.5f,0},{0,1.0f,0,1}},
-                {{-0.5f,0.5f,0},{0,0,1.0f,1}}
+                {{0.25f, 0.25f,0}, {1.0f, 0.0f, 0.0f,1}},
+                {{1, 0.25f,0}, {0.0f, 1.0f, 0.0f,1}},
+                {{1, 1,0}, {0.0f, 0.0f, 1.0f,1}},
+                {{0.25f, 1.0f,0}, {1.0f, 1.0f, 1.0f,1}}
         };
 
-        vk_buffer buffer(m_gpu.getDeviceAbstraction("QUEUE_KHR"),sizeof(vertex) * vertices.size(),VK_BUFFER_USAGE_TRANSFER_SRC_BIT,VK_SHARING_MODE_EXCLUSIVE);
-        buffer.createBufferMemoryRequirements(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,m_gpu.getPhysicalDevice());
-        buffer.allocateMemory();
+        std::vector<vertex> vertices_{
+                {{-0.25f, -0.25f,0}, {1.0f, 0.0f, 0.0f,1}},
+                {{-1, -0.25f,0}, {0.0f, 1.0f, 0.0f,1}},
+                {{-1, -1,0}, {0.0f, 0.0f, 1.0f,1}},
+                {{-0.25f, -1.0f,0}, {1.0f, 1.0f, 1.0f,1}}
+        };
 
-        auto* gpu_vertices = buffer.getMemoryLocation<vertex>();
+        std::vector<uint32_t> indices{
+                0, 1, 2, 2, 3, 0
+        };
 
-        for(uint32_t i = 0; i < vertices.size(); i++)
-            gpu_vertices[i] = vertices[i];
+        geometry geo(vertices,indices);
+        geometry geo_(vertices_,indices);
 
-        buffer.unMapMemory();
-        buffer.bindBuffer();
 
-        vk_buffer buffer_gpu(m_gpu.getDeviceAbstraction("QUEUE_KHR"),sizeof(vertex) * vertices.size(),VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ,VK_SHARING_MODE_EXCLUSIVE);
-        buffer_gpu.createBufferMemoryRequirements(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,m_gpu.getPhysicalDevice());
-        buffer_gpu.allocateMemory();
-        buffer_gpu.bindBuffer();
+        mesh m(m_gpu,"QUEUE_KHR",geo);
+        mesh m_(m_gpu,"QUEUE_KHR",geo_);
 
-        buffer_gpu<<buffer;
-
-        m_rendered.draw_temporal(buffer_gpu);
+        m_rendered.meshes.push_back(&m);
+        m_rendered.meshes.push_back(&m_);
 
 
         while (!glfwWindowShouldClose(m_window.mainWindow)) {
             static uint32_t i = 0;
             i++;
 
-            m_rendered.setClearColor({std::sin(i / 1000.0f),std::sin((i/ 1000.0f) * 2),std::sin((i/ 1000.0f) * 3),1});
+           // m_rendered.setClearColor({std::sin(i / 1000.0f),std::sin((i/ 1000.0f) * 2),std::sin((i/ 1000.0f) * 3),1});
 
 
             m_window.update(m_gpu.getDeviceAbstraction("QUEUE_KHR").device);
@@ -117,11 +120,6 @@ namespace craft{
             glfwPollEvents();
         }
         m_rendered.waitToFinish();
-
-        //Temporal
-        buffer.free();
-        buffer_gpu.free();
-
 
         LOG("Main loop has ended",0,1)
         return 0;

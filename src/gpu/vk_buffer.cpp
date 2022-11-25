@@ -63,6 +63,11 @@ namespace craft{
         }
     }
 
+    size_t vk_buffer::getSize() const{
+        return m_size;
+    }
+
+
     void vk_buffer::bindBuffer() {
         vkBindBufferMemory(m_mainDevice->device ,m_buffer,m_memory,0);
     }

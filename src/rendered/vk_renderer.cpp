@@ -302,8 +302,6 @@ namespace craft{
 
         VkDeviceSize offset[] = {0};
 
-        vkCmdBindVertexBuffers(buffer,0,1,draws.data(),offset);
-
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
@@ -321,9 +319,17 @@ namespace craft{
         vkCmdSetScissor(buffer, 0, 1, &scissor);
 
         //TODO:WILL CHANGE, DO NOT FORGET TO REMOVE PLS
-        m_countOfVertices = 3;
+        m_countOfVertices = 4;
 
-        vkCmdDraw(buffer, m_countOfVertices, 1, 0, 0);
+
+        for(mesh *m: meshes){
+            vkCmdBindVertexBuffers(buffer, 0, 1,m->getVaoArray().data(), offset);
+            vkCmdBindIndexBuffer(buffer, m->getEbo().getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(buffer, static_cast<uint32_t>(m->getIndicesCount()), 1, 0, 0, 0);
+        }
+
+//        vkCmdDraw(buffer, m_countOfVertices, 1, 0, 0);
+
         vkCmdEndRenderPass(buffer);
         if (vkEndCommandBuffer(buffer) != VK_SUCCESS){
             LOG_TERMINAL("Error recording command buffer",999)
@@ -372,10 +378,6 @@ namespace craft{
 
     void vk_renderer::setMainGpu(vk_graphic_device *mainGpu) {
         m_mainGpu = mainGpu;
-    }
-
-    void vk_renderer::draw_temporal(vk_buffer &buffer_) {
-        draws.push_back(buffer_.getBuffer());
     }
 
 }

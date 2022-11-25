@@ -16,7 +16,7 @@
 #include "../gpu/vk_device_abstraction.h"
 #include "../gpu/vk_graphic_device.h"
 #include "../gpu/vk_shader.h"
-#include "../gpu/mesh.h"
+#include "mesh.h"
 #include "../gpu/vk_buffer.h"
 
 namespace craft{
@@ -58,8 +58,7 @@ namespace craft{
 
         void free();
 
-        void draw_temporal(vk_buffer&);
-
+        std::vector<mesh*> meshes;
     private:
 
         void createRenderPass();
@@ -70,7 +69,6 @@ namespace craft{
 
         vk_window *m_mainWindow;
 
-        std::vector<VkBuffer> draws;
 
         std::vector<VkDynamicState> m_dynamicStates;
 
