@@ -12,6 +12,8 @@
 
 namespace craft{
 
+    uint32_t findMemory(const VkMemoryPropertyFlags memoryProperties,VkPhysicalDeviceMemoryProperties deviceMemoryProperties,uint32_t memoryType);
+
     class vk_buffer {
     public:
 

@@ -1,7 +1,9 @@
 #include "App.h"
 
-#include "../rendered/vao.h"
-#include "../rendered/ebo.h"
+
+/*
+
+*/
 
 namespace craft{
 
@@ -14,15 +16,23 @@ namespace craft{
         return true;
     }
 
+    void mouse_callback(GLFWwindow* window, double xpos, double ypos){
+
+    }
+
     App::App(const char *appName, uint32_t appVersion, uint32_t apiVersion,
                     const std::vector<std::string> &layers,const std::vector<std::string> &extensions) : m_instance(appName,appVersion,apiVersion,layers,extensions){
-
 
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
+
         m_window = vk_window({1200, 675}, 60);
+        input::get().setMainWindow(m_window.mainWindow);
+
+        glfwSetCursorPosCallback(m_window.mainWindow, mouse_callback);
+
         m_window.createSurface(m_instance.getInstance());
 
 
@@ -48,6 +58,7 @@ namespace craft{
                 VK_DYNAMIC_STATE_SCISSOR
         });
         m_rendered.createShaderPipeline();
+        m_mainLoopFrameTime = frameRate();
     }
 
     int App::mainLoop() {
@@ -77,47 +88,94 @@ namespace craft{
         */
 
 
+        /*
         std::vector<vertex> vertices{
-                {{0.25f, 0.25f,0}, {1.0f, 0.0f, 0.0f,1}},
-                {{1, 0.25f,0}, {0.0f, 1.0f, 0.0f,1}},
-                {{1, 1,0}, {0.0f, 0.0f, 1.0f,1}},
-                {{0.25f, 1.0f,0}, {1.0f, 1.0f, 1.0f,1}}
-        };
-
-        std::vector<vertex> vertices_{
-                {{-0.25f, -0.25f,0}, {1.0f, 0.0f, 0.0f,1}},
-                {{-1, -0.25f,0}, {0.0f, 1.0f, 0.0f,1}},
-                {{-1, -1,0}, {0.0f, 0.0f, 1.0f,1}},
-                {{-0.25f, -1.0f,0}, {1.0f, 1.0f, 1.0f,1}}
+                {{-0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f,1}},
+                {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f,1}},
+                {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f,1}},
+                {{-0.5f,  0.5f, 0.0}, {1.0f, 1.0f, 1.0f,1}}
         };
 
         std::vector<uint32_t> indices{
-                0, 1, 2, 2, 3, 0
+                0, 1, 3,
+                1, 2, 3
+        };
+        */
+
+         std::vector<vertex> vertices{
+                {{-1, -1, 0.5f}, {1.0f, 0.0f, 0.0f,1}}, //0
+                {{1, -1, 0.5f}, {0.0f, 1.0f, 0.0f,1}}, //1
+                {{-1, 1, 0.5f}, {0.0f, 0.0f, 1.0f,1}}, //2
+                {{1, 1, 0.5f},{1.0f, 1.0f, 1.0f,1}}, //3
+                {{-1, -1, -0.5f},{1.0f, 0.0f, 0.0f,1}}, //4input::GetKeyDown(
+                {{1, -1, -0.5f},{0.0f, 1.0f, 0.0f,1}}, //5
+                {{-1, 1, -0.5f},{1.0f, 0.0f, 0.0f,1}}, //6
+                {{ 1, 1, -0.5f }, {1.0f, 0.0f, 0.0f,1}}  //7
+
         };
 
-        geometry geo(vertices,indices);
-        geometry geo_(vertices_,indices);
+        std::vector<uint32_t> indices{
+                //Top
+                2, 6, 7,
+                2, 3, 7,
 
+                //Bottom
+                0, 4, 5,
+                0, 1, 5,
+
+                //Left
+                0, 2, 6,
+                0, 4, 6,
+
+                //Right
+                1, 3, 7,
+                1, 5, 7,
+
+                //Front
+                0, 2, 3,
+                0, 1, 3,
+
+                //Back
+                4, 6, 7,
+                4, 5, 7
+        };
+
+
+        geometry geo(vertices,indices);
 
         mesh m(m_gpu,"QUEUE_KHR",geo);
-        mesh m_(m_gpu,"QUEUE_KHR",geo_);
+
 
         m_rendered.meshes.push_back(&m);
-        m_rendered.meshes.push_back(&m_);
 
+
+        float aspectRatio = (float)m_window.getWindowSize().x / (float)m_window.getWindowSize().y;
+        camera_ent *myCamera = new camera_ent(aspectRatio,m_window.mainWindow);
+        myCamera->position = glm::vec3(0.0f, 0.0f, 0.0f);
 
         while (!glfwWindowShouldClose(m_window.mainWindow)) {
-            static uint32_t i = 0;
-            i++;
+            static double x = 0;
+            x++;
+            m_mainLoopFrameTime.wait();
 
-           // m_rendered.setClearColor({std::sin(i / 1000.0f),std::sin((i/ 1000.0f) * 2),std::sin((i/ 1000.0f) * 3),1});
+            // m_rendered.setClearColor({std::sin(i / 1000.0f),std::sin((i/ 1000.0f) * 2),std::sin((i/ 1000.0f) * 3),1});
 
+            m_rendered.setMainCamera(static_cast<craft::camera*>(myCamera));
 
+            if(input::get().getMouseButtonOnce(Mouse::ButtonMiddle)){
+                static bool state = false;
+                if(state)
+                    glfwSetInputMode(m_window.mainWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                else
+                    glfwSetInputMode(m_window.mainWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                state = !state;
+            }
+
+            myCamera->update();
+            myCamera->updateCamera();
             m_window.update(m_gpu.getDeviceAbstraction("QUEUE_KHR").device);
-
-
             m_rendered.updateFrame();
-            glfwPollEvents();
+            input::get().poolInputs();
         }
         m_rendered.waitToFinish();
 

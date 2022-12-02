@@ -5,7 +5,13 @@ layout(location = 1) in vec4 color_in;
 
 layout(location = 0) out vec4 fragColor_out;
 
+layout(push_constant) uniform push_data{
+    mat4 cameraMatrix;
+
+}push;
+
 void main() {
-    gl_Position = vec4(position_in, 1.0);
+    gl_Position = push.cameraMatrix * vec4(position_in,1.0f);
+
     fragColor_out = color_in; // Should be rgba
 }

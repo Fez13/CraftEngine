@@ -7,12 +7,19 @@
 #include <iostream>
 #include <vector>
 
-#include "../utils/utils.hpp"
 #include "glm.hpp"
 
+#include "../gpu/vk_buffer.h"
+#include "../utils/utils.hpp"
 #include "../debug/log.h"
 
 namespace craft{
+
+    void createImageView(VkImageViewType viewType, VkFormat format,VkDevice device, VkImageView& imageView, VkImage& image, VkImageAspectFlags aspectFlags
+            , uint32_t baseMinp , uint32_t baseArray , uint32_t levelCount, uint32_t layerCount);
+
+    void createImage(glm::ivec2 size, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image
+            , VkDeviceMemory& imageMemory, VkDevice &device,VkPhysicalDevice gpu);
 
     struct vk_window{
 
@@ -31,7 +38,7 @@ namespace craft{
 
         void createSwapChainProperties(const VkPhysicalDevice& device) const;
 
-        void createFrameBuffers(const VkDevice& device);
+        void createFrameBuffers(const VkDevice& device,VkImageView depthImage);
 
         void setWindowName(const std::string &newName) const;
 

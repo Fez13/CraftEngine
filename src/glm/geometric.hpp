@@ -82,7 +82,7 @@ namespace glm
 		vec<L, T, Q> const& I,
 		vec<L, T, Q> const& Nref);
 
-	/// For the incident vector I and surface orientation N,
+	/// For the incident vector I and surface front N,
 	/// returns the reflection direction : result = I - 2.0 * dot(N, I) * N.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.

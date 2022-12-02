@@ -10,10 +10,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm.hpp"
+#include "../glm/gtx/transform.hpp"
 
 //#define RELEASE
 #include "../utils/utils.hpp"
+#include "../utils/frameRate.h"
 #include "../debug/log.h"
 #include "../debug/time.h"
 
@@ -24,6 +28,8 @@
 #include "../rendered/vk_renderer.h"
 #include "../rendered/mesh.h"
 #include "../gpu/vk_buffer.h"
+#include "../rendered/camera.h"
+#include "../input/input.h"
 
 
 namespace craft{
@@ -40,6 +46,8 @@ namespace craft{
         void clean();
 
     private:
+
+        frameRate m_mainLoopFrameTime;
 
         vk_graphic_device m_gpu;
 

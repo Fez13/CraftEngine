@@ -33,7 +33,7 @@ namespace glm
 
 	/// Rotates a quaternion from a vector of 3 components axis and an angle.
 	///
-	/// @param q Source orientation
+	/// @param q Source front
 	/// @param angle Angle expressed in radians.
 	/// @param axis Axis of the rotation
 	///

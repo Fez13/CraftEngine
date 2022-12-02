@@ -4,6 +4,72 @@ namespace craft{
 
     vk_window* pMainWindow;
 
+    void createImageView(VkImageViewType viewType, VkFormat format,VkDevice device, VkImageView& imageView, VkImage& image, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT
+                , uint32_t baseMinp = 0, uint32_t baseArray = 0, uint32_t levelCount = 1, uint32_t layerCount = 1){
+        VkImageViewCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        info.viewType = viewType;
+        info.image = image;
+        info.format = format;
+
+        //TODO: Maybe this could be customizable in the future
+        info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        info.subresourceRange.aspectMask = aspectFlags;
+        info.subresourceRange.baseMipLevel = baseMinp;
+        info.subresourceRange.levelCount = levelCount;
+        info.subresourceRange.baseArrayLayer = baseArray;
+        info.subresourceRange.layerCount = layerCount;
+
+
+        if (vkCreateImageView(device, &info, nullptr, &imageView) != VK_SUCCESS){
+            LOG_TERMINAL("Fail creating a image view...",999)
+        }
+    }
+
+    //I think this should be a type of buffer, but I am not sure if it fits the definition
+    void createImage(glm::ivec2 size, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image
+                     , VkDeviceMemory& imageMemory, VkDevice &device,VkPhysicalDevice gpu){
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = size.x;
+        imageInfo.extent.height = size.y;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = format;
+        imageInfo.tiling = tiling;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = usage;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+            LOG_TERMINAL("Fail creating a image...",999)
+        }
+
+        VkMemoryRequirements memRequirements;
+        vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+        VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+        vkGetPhysicalDeviceMemoryProperties(gpu,&deviceMemoryProperties);
+
+        VkMemoryAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = findMemory(properties,deviceMemoryProperties, memRequirements.memoryTypeBits);
+
+        if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+            LOG_TERMINAL("Fail creating an image memory...",999)
+        }
+        vkBindImageMemory(device, image, imageMemory, 0);
+    }
+
+
     vk_window::vk_window(glm::ivec2 windowSize, uint32_t refreshRate) : m_refreshRate(refreshRate) , m_windowSize(windowSize), surface(){
 
         glfwWindowHint(GLFW_REFRESH_RATE,60);
@@ -19,7 +85,6 @@ namespace craft{
     }
 
     void vk_window::free(const VkInstance& instance, const VkDevice &device) const {
-
         cleanFrameBuffers(device);
         glfwDestroyWindow(mainWindow);
         vkDestroySwapchainKHR(device,m_swapChain.swapChainKhr, nullptr);
@@ -54,7 +119,6 @@ namespace craft{
     uint32_t vk_window::findQueueFamily(VkPhysicalDevice mainDevice) const {
         if(!m_swapChainData.populated){
             LOG_TERMINAL("You can´t find a queue family without calling createSwapChainProperties before",5)
-            return 0;
         }
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(mainDevice, &families, nullptr);
@@ -211,20 +275,23 @@ namespace craft{
         return m_swapChain.format.format;
     }
 
-    void vk_window::createFrameBuffers(VkDevice const &device) {
+
+
+    void vk_window::createFrameBuffers(VkDevice const &device,VkImageView depthImage) {
         m_swapChain.frameBuffers.resize(m_swapChain.imagesViews.size());
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = m_renderPass;
-        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.attachmentCount = 2;
         framebufferInfo.width = getExtent().width;
         framebufferInfo.height = getExtent().height;
         framebufferInfo.layers = 1;
 
         for (size_t i = 0; i < m_swapChain.imagesViews.size(); i++) {
-            VkImageView attachments[] = {
-                    m_swapChain.imagesViews[i]
+            VkImageView attachments[2] = {
+                    m_swapChain.imagesViews[i],
+                    depthImage
             };
             framebufferInfo.pAttachments = attachments;
 
@@ -338,13 +405,7 @@ namespace craft{
         info.subresourceRange.baseArrayLayer = 0;
         info.subresourceRange.layerCount = 1;
 
-        for(uint32_t i = 0; i<imagesViews.size(); i++){
-            info.image = images[i];
-            if (vkCreateImageView(device, &info, nullptr, &imagesViews[i]) != VK_SUCCESS){
-                LOG_TERMINAL("Fail creating a image view...",999)
-            }
-
-        }
-
+        for(uint32_t i = 0; i<imagesViews.size(); i++)
+            createImageView(VK_IMAGE_VIEW_TYPE_2D,format.format,device,imagesViews[i], images[i]);
     }
 }

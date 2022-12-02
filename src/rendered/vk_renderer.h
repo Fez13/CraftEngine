@@ -18,11 +18,14 @@
 #include "../gpu/vk_shader.h"
 #include "mesh.h"
 #include "../gpu/vk_buffer.h"
+#include "camera.h"
 
 namespace craft{
 
-    //This shouldn't be in the renderer file, it should be in a "Shader class" instead
-    VkShaderModule createShaderModule(std::vector<char>, VkDevice&);
+    struct cameraPushData{
+        glm::mat4 cameraMatrix;
+
+    };
 
     //TODO:
     //All the command buffer stuff will be in a separated class and file which i am not sure
@@ -59,7 +62,28 @@ namespace craft{
         void free();
 
         std::vector<mesh*> meshes;
+
+        std::vector<std::pair<vk_buffer,glm::mat4*>> *ubo_buffers;
+
+        void setMainCamera(camera *pCamera);
+
     private:
+
+        struct depthImage{
+        public:
+            VkFormat format;
+            VkDeviceMemory memory;
+            VkImage depthImage;
+            VkImageView imageView;
+
+            void free(VkDevice &device){
+                vkDestroyImageView(device,imageView, nullptr);
+                vkDestroyImage(device,depthImage, nullptr);
+                vkFreeMemory(device,memory, nullptr);
+            }
+        };
+
+        depthImage m_depthImage;
 
         void createRenderPass();
 
@@ -101,6 +125,10 @@ namespace craft{
         VkSemaphore m_waitRender;
 
         vk_graphic_device *m_mainGpu;
+
+        VkDescriptorSetLayout m_descriptorSetLayout;
+
+        camera* m_currentCamera;
 
     };
 }

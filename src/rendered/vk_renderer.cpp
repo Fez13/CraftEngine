@@ -46,6 +46,14 @@ namespace craft{
         m_usedFamilies = m_mainGpu->getAllUsedFamilies();
         m_mainWindow->createSwapChain(m_mainDevice->device,m_usedFamilies);
 
+        //?Working on
+
+        //May be convenient to add support to other types of format...
+        m_depthImage.format = VK_FORMAT_D32_SFLOAT;
+        createImage({m_mainWindow->getExtent().width, m_mainWindow->getExtent().height},  m_depthImage.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    m_depthImage.depthImage, m_depthImage.memory,m_mainDevice->device,m_mainGpu->getPhysicalDevice());
+        createImageView(VK_IMAGE_VIEW_TYPE_2D, m_depthImage.format,m_mainDevice->device, m_depthImage.imageView,m_depthImage.depthImage,VK_IMAGE_ASPECT_DEPTH_BIT,0,0,1,1);
+
         createRenderPass();
 
         shaderPair pair;
@@ -77,7 +85,7 @@ namespace craft{
         assemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         assemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
 
-        //TODO:Should be dynamically modifiable
+        //TODO: Should be dynamically modifiable
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
@@ -96,7 +104,7 @@ namespace craft{
         viewportStateCreateInfo.scissorCount = 1;
         viewportStateCreateInfo.pViewports = &viewport;
         viewportStateCreateInfo.pScissors = &scissor;
-        //TODO END
+        //TODO: END
 
         VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
         rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -104,7 +112,7 @@ namespace craft{
         rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
         rasterizationStateCreateInfo.polygonMode = m_polygonMode;
         rasterizationStateCreateInfo.lineWidth = 1.0f;
-        rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
         rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
         //May change
@@ -148,17 +156,44 @@ namespace craft{
         colorBlendStateCreateInfo.blendConstants[2] = 0.0f; // Optional
         colorBlendStateCreateInfo.blendConstants[3] = 0.0f; // Optional
 
+
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+        descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutCreateInfo.bindingCount = 0;
+        descriptorSetLayoutCreateInfo.pBindings = nullptr;
+
+        if (vkCreateDescriptorSetLayout(m_mainDevice->device, &descriptorSetLayoutCreateInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
+            LOG_TERMINAL("Error creating vkCreateDescriptorSetLayout",999)
+        }
+
+
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(cameraPushData);
+
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.setLayoutCount = 0; // Optional
-        pipelineLayoutCreateInfo.pSetLayouts = nullptr; // Optional
-        pipelineLayoutCreateInfo.pushConstantRangeCount = 0; // Optional
-        pipelineLayoutCreateInfo.pPushConstantRanges = nullptr; // Optional
+        pipelineLayoutCreateInfo.setLayoutCount = 1;
+        pipelineLayoutCreateInfo.pSetLayouts = &m_descriptorSetLayout;
+        pipelineLayoutCreateInfo.pushConstantRangeCount = 1; // Optional
+        pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange; // Optional
 
         if (vkCreatePipelineLayout(m_mainDevice->device, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS){
             LOG_TERMINAL("Fail creating a pipelineLayout",999)
         }
         pair.createDouble();
+
+        //Depth
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+        depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+        depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+
+
         VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
         graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         graphicsPipelineCreateInfo.stageCount = 2;
@@ -169,7 +204,7 @@ namespace craft{
         graphicsPipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
         graphicsPipelineCreateInfo.pRasterizationState = &rasterizationStateCreateInfo;
         graphicsPipelineCreateInfo.pMultisampleState = &multisampleStateCreateInfo;
-        graphicsPipelineCreateInfo.pDepthStencilState = nullptr; // Optional
+        graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
         graphicsPipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
         graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
 
@@ -185,8 +220,9 @@ namespace craft{
             LOG_TERMINAL("Error initializing the pipeline...",999)
         }
         m_mainWindow->setRenderPass(m_renderPass);
-        m_mainWindow->createFrameBuffers(m_mainDevice->device);
+        m_mainWindow->createFrameBuffers(m_mainDevice->device,m_depthImage.imageView);
         m_mainDevice->createFence(VK_FENCE_CREATE_SIGNALED_BIT);
+
         //WILL CHANGE
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -208,11 +244,13 @@ namespace craft{
     }
 
     void vk_renderer::free() {
+        m_depthImage.free(m_mainDevice->device);
         vkDestroySemaphore(m_mainDevice->device,m_waitRender, nullptr);
         vkDestroySemaphore(m_mainDevice->device,m_waitImage, nullptr);
         vkDestroyPipeline(m_mainDevice->device,m_pipeline, nullptr);
         vkDestroyRenderPass(m_mainDevice->device,m_renderPass, nullptr);
         vkDestroyPipelineLayout(m_mainDevice->device,m_pipelineLayout, nullptr);
+        vkDestroyDescriptorSetLayout(m_mainDevice->device,m_descriptorSetLayout, nullptr);
         m_vert.free();
         m_frag.free();
     }
@@ -222,6 +260,7 @@ namespace craft{
     }
 
     void vk_renderer::createRenderPass() {
+        //Color
         VkAttachmentDescription attachmentDescription{};
         attachmentDescription.format = m_mainWindow->getSwapChainFormat();
         //TODO multi-sampling
@@ -240,35 +279,54 @@ namespace craft{
         attachmentReference.attachment = 0;
         attachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        VkSubpassDescription subpassDescription{};
-        subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-        //May be useful with the RTX problem
-        subpassDescription.colorAttachmentCount = 1;
-        subpassDescription.pColorAttachments = &attachmentReference;
+        //Depth
+        VkAttachmentDescription depthAttachmentDescription{};
+        depthAttachmentDescription.format = m_depthImage.format;
+        depthAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+        depthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkAttachmentReference depthAttachmentReference{};
+        depthAttachmentReference.attachment = 1;
+        depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription SubpassDescription{};
+        SubpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        SubpassDescription.colorAttachmentCount = 1;
+        SubpassDescription.pColorAttachments = &attachmentReference;
+        SubpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
+
+        VkAttachmentDescription descriptions[2] = {attachmentDescription, depthAttachmentDescription};
 
 
         VkSubpassDependency dependency{};
         dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
         dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.srcAccessMask = 0;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
 
         VkRenderPassCreateInfo renderPassCreateInfo{};
         renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassCreateInfo.attachmentCount = 1;
-        renderPassCreateInfo.pAttachments = &attachmentDescription;
+        renderPassCreateInfo.attachmentCount = 2;
+        renderPassCreateInfo.pAttachments = descriptions;
         renderPassCreateInfo.subpassCount = 1;
-        renderPassCreateInfo.pSubpasses = &subpassDescription;
+        renderPassCreateInfo.pSubpasses = &SubpassDescription;
         renderPassCreateInfo.dependencyCount = 1;
         renderPassCreateInfo.pDependencies = &dependency;
+
 
         if (vkCreateRenderPass(m_mainDevice->device, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS){
             LOG_TERMINAL("Couldn't initialize the render pass...",999)
         }
+
     }
 
     VkRenderPass vk_renderer::getRenderPass() const {
@@ -293,9 +351,13 @@ namespace craft{
         renderPassBeginInfo.renderArea.offset = {0, 0};
         renderPassBeginInfo.renderArea.extent = m_mainWindow->getExtent();
 
-        VkClearValue clearColor = {m_clearColor.x,m_clearColor.y,m_clearColor.z,m_clearColor.w};
-        renderPassBeginInfo.clearValueCount = 1;
-        renderPassBeginInfo.pClearValues = &clearColor;
+        VkClearValue clearValues[2] = {};
+        clearValues[0].color = {{m_clearColor.x, m_clearColor.y, m_clearColor.z, m_clearColor.w}};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+
+        renderPassBeginInfo.clearValueCount = 2;
+        renderPassBeginInfo.pClearValues = clearValues;
 
         vkCmdBeginRenderPass(buffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
@@ -317,18 +379,24 @@ namespace craft{
         scissor.offset = {0, 0};
         scissor.extent = m_mainWindow->getExtent();
         vkCmdSetScissor(buffer, 0, 1, &scissor);
+        cameraPushData data{};
 
-        //TODO:WILL CHANGE, DO NOT FORGET TO REMOVE PLS
-        m_countOfVertices = 4;
+        if(m_currentCamera == nullptr){
+            LOG("The rendered has no camera",1,0)
+            data.cameraMatrix = glm::mat4(1.0f);
+            vkCmdPushConstants(buffer,m_pipelineLayout,VK_SHADER_STAGE_VERTEX_BIT,0,sizeof(cameraPushData),&data);
 
+        }
+        else{
+            data.cameraMatrix = m_currentCamera->getMainMatrix();
+            vkCmdPushConstants(buffer,m_pipelineLayout,VK_SHADER_STAGE_VERTEX_BIT,0,sizeof(cameraPushData),&data);
+        }
 
         for(mesh *m: meshes){
             vkCmdBindVertexBuffers(buffer, 0, 1,m->getVaoArray().data(), offset);
             vkCmdBindIndexBuffer(buffer, m->getEbo().getBuffer(), 0, VK_INDEX_TYPE_UINT32);
             vkCmdDrawIndexed(buffer, static_cast<uint32_t>(m->getIndicesCount()), 1, 0, 0, 0);
         }
-
-//        vkCmdDraw(buffer, m_countOfVertices, 1, 0, 0);
 
         vkCmdEndRenderPass(buffer);
         if (vkEndCommandBuffer(buffer) != VK_SUCCESS){
@@ -379,6 +447,11 @@ namespace craft{
     void vk_renderer::setMainGpu(vk_graphic_device *mainGpu) {
         m_mainGpu = mainGpu;
     }
+
+    void vk_renderer::setMainCamera(camera *pCamera){
+        m_currentCamera = pCamera;
+    }
+
 
 }
 
