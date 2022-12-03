@@ -1,10 +1,5 @@
 #include "App.h"
 
-
-/*
-
-*/
-
 namespace craft{
 
     bool IsGood(VkPhysicalDeviceProperties& pt,VkPhysicalDeviceFeatures& ft){
@@ -21,7 +16,9 @@ namespace craft{
     }
 
     App::App(const char *appName, uint32_t appVersion, uint32_t apiVersion,
-                    const std::vector<std::string> &layers,const std::vector<std::string> &extensions) : m_instance(appName,appVersion,apiVersion,layers,extensions){
+                    const std::vector<std::string> &layers,const std::vector<std::string> &extensions){
+
+        vk_instance::get().initialize(appName,appVersion,apiVersion,layers,extensions);
 
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -33,15 +30,14 @@ namespace craft{
 
         glfwSetCursorPosCallback(m_window.mainWindow, mouse_callback);
 
-        m_window.createSurface(m_instance.getInstance());
+        m_window.createSurface();
 
+        vk_graphic_device::get().initialize({IsGood});
 
-        m_gpu = vk_graphic_device(m_instance.getInstance(), {IsGood});
-
-        m_window.createSwapChainProperties(m_gpu.getPhysicalDevice());
+        m_window.createSwapChainProperties(vk_graphic_device::get().getPhysicalDevice());
 
         float priority = 1.0f;
-        m_gpu.createDeviceAbstraction(m_window.findQueueFamily(m_gpu.getPhysicalDevice()), "QUEUE_KHR", priority,{VK_KHR_SWAPCHAIN_EXTENSION_NAME});
+        vk_graphic_device::get().createDeviceAbstraction(m_window.findQueueFamily(vk_graphic_device::get().getPhysicalDevice()), "QUEUE_KHR", priority,{VK_KHR_SWAPCHAIN_EXTENSION_NAME});
 
         std::string vert = "../src/shaders/compiled/vert.spv";
 
@@ -49,15 +45,14 @@ namespace craft{
         compile("../src/shaders/verts/basic_vert.vert", EMPTY, vert, true);
         compile("../src/shaders/frags/basic_frag.frag", EMPTY, frag, true);
 
-        m_rendered = vk_renderer(&m_gpu.getDeviceAbstraction("QUEUE_KHR"));
-        m_rendered.loadShaders(vert.c_str(),frag.c_str());
-        m_rendered.setMainWindow(&m_window);
-        m_rendered.setMainGpu(&m_gpu);
-        m_rendered.setDynamicStates({
+        vk_renderer::get().initialize(&vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR"));
+        vk_renderer::get().loadShaders(vert.c_str(),frag.c_str());
+        vk_renderer::get().setMainWindow(&m_window);
+        vk_renderer::get().setDynamicStates({
                 VK_DYNAMIC_STATE_VIEWPORT,
                 VK_DYNAMIC_STATE_SCISSOR
         });
-        m_rendered.createShaderPipeline();
+        vk_renderer::get().createShaderPipeline();
         m_mainLoopFrameTime = frameRate();
     }
 
@@ -102,7 +97,8 @@ namespace craft{
         };
         */
 
-         std::vector<vertex> vertices{
+
+        std::vector<vertex> vertices{
                 {{-1, -1, 0.5f}, {1.0f, 0.0f, 0.0f,1}}, //0
                 {{1, -1, 0.5f}, {0.0f, 1.0f, 0.0f,1}}, //1
                 {{-1, 1, 0.5f}, {0.0f, 0.0f, 1.0f,1}}, //2
@@ -143,24 +139,23 @@ namespace craft{
 
         geometry geo(vertices,indices);
 
-        mesh m(m_gpu,"QUEUE_KHR",geo);
+        mesh m("QUEUE_KHR",geo);
 
 
-        m_rendered.meshes.push_back(&m);
+        vk_renderer::get().meshes.push_back(&m);
 
 
         float aspectRatio = (float)m_window.getWindowSize().x / (float)m_window.getWindowSize().y;
         camera_ent *myCamera = new camera_ent(aspectRatio,m_window.mainWindow);
         myCamera->position = glm::vec3(0.0f, 0.0f, 0.0f);
+        vk_renderer::get().setMainCamera(static_cast<craft::camera*>(myCamera));
 
         while (!glfwWindowShouldClose(m_window.mainWindow)) {
             static double x = 0;
             x++;
             m_mainLoopFrameTime.wait();
 
-            // m_rendered.setClearColor({std::sin(i / 1000.0f),std::sin((i/ 1000.0f) * 2),std::sin((i/ 1000.0f) * 3),1});
 
-            m_rendered.setMainCamera(static_cast<craft::camera*>(myCamera));
 
             if(input::get().getMouseButtonOnce(Mouse::ButtonMiddle)){
                 static bool state = false;
@@ -173,20 +168,20 @@ namespace craft{
 
             myCamera->update();
             myCamera->updateCamera();
-            m_window.update(m_gpu.getDeviceAbstraction("QUEUE_KHR").device);
-            m_rendered.updateFrame();
+            m_window.update(vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR").device);
+            vk_renderer::get().updateFrame();
             input::get().poolInputs();
         }
-        m_rendered.waitToFinish();
+        vk_renderer::get().waitToFinish();
 
         LOG("Main loop has ended",0,1)
         return 0;
     }
 
     void App::clean() {
-        m_window.free(m_instance.getInstance(),m_gpu.getDeviceAbstraction("QUEUE_KHR").device);
-        m_rendered.free();
-        m_gpu.free();
+        m_window.free(vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR").device);
+        vk_renderer::get().free();
+        vk_graphic_device::get().free();
         glfwTerminate();
     }
 }

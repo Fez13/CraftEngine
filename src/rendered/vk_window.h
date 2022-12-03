@@ -12,6 +12,7 @@
 #include "../gpu/vk_buffer.h"
 #include "../utils/utils.hpp"
 #include "../debug/log.h"
+#include "../core/vk_instance.h"
 
 namespace craft{
 
@@ -31,7 +32,7 @@ namespace craft{
 
         explicit vk_window();
 
-        void createSurface(VkInstance& instance);
+        void createSurface();
 
         //Use AFTER creating properties
         void createSwapChain(const VkDevice &device,const std::vector<uint32_t>& queueFamilies,uint32_t swapChainImageCount = 0);
@@ -50,7 +51,7 @@ namespace craft{
 
         void cleanFrameBuffers(const VkDevice &mainDevice) const;
 
-        void free(const VkInstance& instance,const VkDevice &KHRdevice) const;
+        void free(const VkDevice &KHRdevice) const;
 
         uint32_t findQueueFamily(VkPhysicalDevice mainDevice) const;
 

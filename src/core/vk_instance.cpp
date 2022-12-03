@@ -4,8 +4,10 @@
 
 namespace craft{
 
-    craft::vk_instance::vk_instance(const char *appName, uint32_t appVersion, uint32_t apiVersion,
-                                    const std::vector<std::string>& layers = {},const std::vector<std::string>& extensions = {}) : m_instance() {
+    vk_instance vk_instance::s_vk_instance;
+
+    void vk_instance::initialize(const char *appName, uint32_t appVersion, uint32_t apiVersion,
+                                 const std::vector<std::string> &layers, const std::vector<std::string> &extensions) {
 
         VkApplicationInfo AppInfo{};
         AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -107,5 +109,9 @@ namespace craft{
             if((std::string)availableExtension.extensionName == extension)
                 return true;
         return false;
+    }
+
+    vk_instance &vk_instance::get() {
+        return s_vk_instance;
     }
 }

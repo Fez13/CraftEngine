@@ -10,7 +10,11 @@ namespace craft{
 
     struct vk_instance{
 
-        vk_instance(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers,const std::vector<std::string>& extensions);
+        vk_instance(const vk_instance&) = delete;
+
+        static vk_instance& get();
+
+        void initialize(const char* appName, uint32_t appVersion, uint32_t apiVersion, const std::vector<std::string>& layers,const std::vector<std::string>& extensions);
 
         VkInstance& getInstance();
 
@@ -21,6 +25,10 @@ namespace craft{
         ~vk_instance();
 
     private:
+
+        vk_instance() = default;
+
+        static vk_instance s_vk_instance;
 
         static bool checkLayer(const std::vector<VkLayerProperties> &availableLayers , const std::string& layer);
 

@@ -84,17 +84,17 @@ namespace craft{
         pMainWindow = this;
     }
 
-    void vk_window::free(const VkInstance& instance, const VkDevice &device) const {
+    void vk_window::free(const VkDevice &device) const {
         cleanFrameBuffers(device);
         glfwDestroyWindow(mainWindow);
         vkDestroySwapchainKHR(device,m_swapChain.swapChainKhr, nullptr);
-        vkDestroySurfaceKHR(instance,surface, nullptr);
+        vkDestroySurfaceKHR(vk_instance::get().getInstance(),surface, nullptr);
     }
 
     vk_window::vk_window() : m_refreshRate(60) {}
 
-    void vk_window::createSurface(VkInstance &instance) {
-        if(glfwCreateWindowSurface(instance,mainWindow, nullptr,&surface) != VK_SUCCESS){
+    void vk_window::createSurface() {
+        if(glfwCreateWindowSurface(vk_instance::get().getInstance(),mainWindow, nullptr,&surface) != VK_SUCCESS){
            LOG_TERMINAL("Error creating windowSurface",999);
         }
     }

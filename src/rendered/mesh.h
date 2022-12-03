@@ -27,7 +27,7 @@ namespace craft{
     class mesh {
     public:
 
-        explicit mesh(vk_graphic_device& gpu,const char* deviceName,geometry&);
+        explicit mesh(const char* deviceName,geometry&);
 
         void free();
 
@@ -43,9 +43,9 @@ namespace craft{
     private:
         std::unique_ptr<geometry> m_geometry;
 
-        std::array<VkBuffer,1> m_vao_data;
+        std::array<VkBuffer,1> m_vao_data{};
 
-        vao m_vao;
-        ebo m_ebo;
+        vao m_vao{};
+        ebo m_ebo{};
     };
 }

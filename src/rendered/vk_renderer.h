@@ -36,8 +36,11 @@ namespace craft{
     class vk_renderer {
     public:
 
-        explicit vk_renderer(deviceAbstraction *mainDevice);
-        explicit vk_renderer()= default;
+        vk_renderer(const vk_renderer&) = delete;
+
+        static vk_renderer &get();
+
+        void initialize(deviceAbstraction *mainDevice);
 
         void loadShaders(const char* vert_path,const char* frag_path);
 
@@ -46,8 +49,6 @@ namespace craft{
         void setDynamicStates(const std::vector<VkDynamicState> &states);
 
         void setMainWindow(vk_window *mainWindow);
-
-        void setMainGpu(vk_graphic_device *mainGpu);
 
         void setPolygonMode(VkPolygonMode);
 
@@ -68,6 +69,10 @@ namespace craft{
         void setMainCamera(camera *pCamera);
 
     private:
+
+        static vk_renderer s_vk_renderer;
+
+        vk_renderer() = default;
 
         struct depthImage{
         public:
@@ -123,8 +128,6 @@ namespace craft{
         //Smartphones should not be in the renderer
         VkSemaphore m_waitImage;
         VkSemaphore m_waitRender;
-
-        vk_graphic_device *m_mainGpu;
 
         VkDescriptorSetLayout m_descriptorSetLayout;
 

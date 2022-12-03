@@ -29,7 +29,7 @@ namespace craft{
 
         glm::dvec2 GetMousePosition() const;
 
-        static const char* getClipBoard();
+        const char* getClipBoard();
 
         double GetMouseScroll() const;
 
@@ -41,11 +41,10 @@ namespace craft{
 
         input() = default;
 
-        static input m_input;
+        static input s_input;
 
         double m_scroll;
 
         std::vector<KeyCode> m_pressedInFrame;
-
     };
 }

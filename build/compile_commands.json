@@ -1,0 +1,102 @@
+[
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/main.cpp.o -c /home/federico/CLionProjects/CraftEngine/main.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/main.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/core/App.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/core/App.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/core/App.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/core/vk_instance.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/core/vk_instance.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/core/vk_instance.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/gpu/vk_graphic_device.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/gpu/vk_graphic_device.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/gpu/vk_graphic_device.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/vk_window.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/vk_window.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/vk_window.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/shaders/compile_Spir_V.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/shaders/compile_Spir_V.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/shaders/compile_Spir_V.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/vk_renderer.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/vk_renderer.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/vk_renderer.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/debug/time.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/debug/time.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/debug/time.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/gpu/vk_device_abstraction.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/gpu/vk_device_abstraction.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/gpu/vk_device_abstraction.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/gpu/vk_shader.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/gpu/vk_shader.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/gpu/vk_shader.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/gpu/vk_buffer.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/gpu/vk_buffer.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/gpu/vk_buffer.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/mesh.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/mesh.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/mesh.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/vertex.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/vertex.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/vertex.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/vao.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/vao.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/vao.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/ebo.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/ebo.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/ebo.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/utils/frameRate.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/utils/frameRate.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/utils/frameRate.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/rendered/camera.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/rendered/camera.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/rendered/camera.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/input/input.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/input/input.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/input/input.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/gameObjects/entity.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/gameObjects/entity.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/gameObjects/entity.cpp"
+},
+{
+  "directory": "/home/federico/CLionProjects/CraftEngine/build",
+  "command": "/usr/bin/g++ -I/home/federico/CLionProjects/CraftEngine/src/glm -g -std=gnu++23 -o CMakeFiles/CraftEngine.dir/src/gameObjects/entitiesExtencions.cpp.o -c /home/federico/CLionProjects/CraftEngine/src/gameObjects/entitiesExtencions.cpp",
+  "file": "/home/federico/CLionProjects/CraftEngine/src/gameObjects/entitiesExtencions.cpp"
+}
+]

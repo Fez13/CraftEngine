@@ -4,39 +4,7 @@
 
 namespace craft{
 
-    vk_graphic_device::vk_graphic_device(VkInstance &mainInstance, const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>>& checks = {}) {
-
-        uint32_t devices = 0;
-
-        vkEnumeratePhysicalDevices(mainInstance,&devices, nullptr);
-
-        if(devices == 0){
-            LOG_TERMINAL("There is not vulkan gpu available...",999)
-        }
-        m_availableDevices.resize(devices);
-        vkEnumeratePhysicalDevices(mainInstance,&devices, m_availableDevices.data());
-
-        bool pick = false;
-        for(const VkPhysicalDevice &dv : m_availableDevices)
-            if(deviceSuitable(dv,checks)){
-                m_mainDevice = dv;
-                pick = true;
-            }
-
-
-        if(!pick){
-            LOG_TERMINAL("There is not vulkan gpu available with the requested features",999)
-        }
-
-        //Creates the main abstract device
-        uint32_t queueFamilyIndex = getSuitableQueueFamily(mainInstance, [](const VkQueueFamilyProperties & fp){
-            if(!(fp.queueFlags & VK_QUEUE_GRAPHICS_BIT))
-                return false;
-            return true;
-        });
-        float priority = 1.0f;
-        createDeviceAbstraction(queueFamilyIndex,"main",priority);
-    }
+    vk_graphic_device vk_graphic_device::s_vk_graphic_device;
 
     bool vk_graphic_device::deviceSuitable(VkPhysicalDevice const &device, const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>> &checks){
         bool valid = true;
@@ -50,8 +18,7 @@ namespace craft{
             valid = validator(deviceProperties,deviceFeatures);
         return valid;
     }
-    uint32_t vk_graphic_device::getSuitableQueueFamily(VkInstance &mainInstance,
-                                                       std::function<bool(const VkQueueFamilyProperties & fp)> checks) {
+    uint32_t vk_graphic_device::getSuitableQueueFamily(std::function<bool(const VkQueueFamilyProperties & fp)> checks) {
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(m_mainDevice, &families, nullptr);
 
@@ -150,6 +117,43 @@ namespace craft{
         return pts;
     }
 
-    vk_graphic_device::vk_graphic_device() : m_mainDevice(nullptr){}
+    vk_graphic_device &vk_graphic_device::get() {
+        return s_vk_graphic_device;
+    }
+
+    void vk_graphic_device::initialize(const std::vector<std::function<bool(VkPhysicalDeviceProperties &,
+                                                                            VkPhysicalDeviceFeatures &)>> &checks) {
+
+        uint32_t devices = 0;
+
+        vkEnumeratePhysicalDevices(vk_instance::get().getInstance(),&devices, nullptr);
+
+        if(devices == 0){
+            LOG_TERMINAL("There is not vulkan gpu available...",999)
+        }
+        m_availableDevices.resize(devices);
+        vkEnumeratePhysicalDevices(vk_instance::get().getInstance(),&devices, m_availableDevices.data());
+
+        bool pick = false;
+        for(const VkPhysicalDevice &dv : m_availableDevices)
+            if(deviceSuitable(dv,checks)){
+                m_mainDevice = dv;
+                pick = true;
+            }
+
+
+        if(!pick){
+            LOG_TERMINAL("There is not vulkan gpu available with the requested features",999)
+        }
+
+        //Creates the main abstract device
+        uint32_t queueFamilyIndex = getSuitableQueueFamily([](const VkQueueFamilyProperties & fp){
+            if(!(fp.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+                return false;
+            return true;
+        });
+        float priority = 1.0f;
+        createDeviceAbstraction(queueFamilyIndex,"main",priority);
+    }
 
 }

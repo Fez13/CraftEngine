@@ -1,0 +1,24 @@
+# ninja log v5
+7	1696	1670031151667424220	CMakeFiles/CraftEngine.dir/src/gpu/vk_device_abstraction.cpp.o	647c8db95a3311
+6	1794	1670031151767424871	CMakeFiles/CraftEngine.dir/src/debug/time.cpp.o	c4129ceec83dc63c
+7	2126	1670031152099427036	CMakeFiles/CraftEngine.dir/src/gpu/vk_shader.cpp.o	e9fc775fceef61cf
+4	3042	1670031153011432994	CMakeFiles/CraftEngine.dir/src/shaders/compile_Spir_V.cpp.o	7f30c6fc0462a464
+2	3381	1670031153355435246	CMakeFiles/CraftEngine.dir/src/core/vk_instance.cpp.o	eb83d162637d419a
+1697	3735	1670031153707437551	CMakeFiles/CraftEngine.dir/src/gpu/vk_buffer.cpp.o	78cc1bd55df0ed24
+2126	4075	1670031154047439777	CMakeFiles/CraftEngine.dir/src/rendered/vertex.cpp.o	7bf729db1d3b9cf0
+5	4488	1670031154459442480	CMakeFiles/CraftEngine.dir/src/rendered/vk_renderer.cpp.o	2ffdd73ac743a8e6
+1	4572	1670031154543443030	CMakeFiles/CraftEngine.dir/main.cpp.o	47420d25af6939be
+4573	4667	1670031154639443660	CMakeFiles/CraftEngine.dir/src/gameObjects/entity.cpp.o	9230fa4ee9f3db01
+2	4758	1670031154731444265	CMakeFiles/CraftEngine.dir/src/rendered/vk_window.cpp.o	9b7f632b628ce1ee
+3735	5236	1670031155211447415	CMakeFiles/CraftEngine.dir/src/utils/frameRate.cpp.o	587ce9c5665c0d9a
+2	5275	1670031155247447652	CMakeFiles/CraftEngine.dir/src/gpu/vk_graphic_device.cpp.o	ed53127f633cd780
+4667	5339	1670031155311448073	CMakeFiles/CraftEngine.dir/src/gameObjects/entitiesExtencions.cpp.o	45d3fc4ee128ef28
+1794	5632	1670031155603449993	CMakeFiles/CraftEngine.dir/src/rendered/mesh.cpp.o	ee05115fa751d081
+3381	5662	1670031155635450201	CMakeFiles/CraftEngine.dir/src/rendered/ebo.cpp.o	28e0419ea830d409
+3043	5681	1670031155655450334	CMakeFiles/CraftEngine.dir/src/rendered/vao.cpp.o	e361b6fa5a5fe222
+1	5772	1670031155743450913	CMakeFiles/CraftEngine.dir/src/core/App.cpp.o	b5865328b42831ff
+4075	6190	1670031156163453676	CMakeFiles/CraftEngine.dir/src/rendered/camera.cpp.o	436b247fa3d53e30
+4489	6319	1670031156291454518	CMakeFiles/CraftEngine.dir/src/input/input.cpp.o	4dd1feaeb8a3f00a
+6319	6545	1670031156515455993	CraftEngine	d9453fae95a2a54b
+3	1945	1670031315964660842	CMakeFiles/CraftEngine.dir/src/core/App.cpp.o	b5865328b42831ff
+1946	2135	1670031316152662429	CraftEngine	d9453fae95a2a54b

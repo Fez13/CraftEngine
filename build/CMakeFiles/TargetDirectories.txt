@@ -1,0 +1,3 @@
+/home/federico/CLionProjects/CraftEngine/build/CMakeFiles/CraftEngine.dir
+/home/federico/CLionProjects/CraftEngine/build/CMakeFiles/edit_cache.dir
+/home/federico/CLionProjects/CraftEngine/build/CMakeFiles/rebuild_cache.dir

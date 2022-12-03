@@ -3,7 +3,7 @@
 
 namespace craft{
 
-    vk_renderer* mainRendered;
+    vk_renderer vk_renderer::s_vk_renderer;
 
     void window_size_callback(GLFWwindow* window, int width, int height)
     {
@@ -12,7 +12,7 @@ namespace craft{
     }
 
 
-    vk_renderer::vk_renderer(deviceAbstraction *mainDevice){
+    void vk_renderer::initialize(deviceAbstraction *mainDevice) {
         m_mainWindow = nullptr;
         m_pipelineLayout = nullptr;
         m_renderPass = nullptr;
@@ -21,7 +21,6 @@ namespace craft{
         m_clearColor = {0,0,0,1};
         m_countOfVertices = 0;
         m_verticesOffset = 0;
-        mainRendered = this;
     }
 
     void vk_renderer::setDynamicStates(const std::vector<VkDynamicState> &states) {
@@ -43,7 +42,7 @@ namespace craft{
         if(m_mainWindow == nullptr){
             LOG_TERMINAL("Rendered without main window",999)
         }
-        m_usedFamilies = m_mainGpu->getAllUsedFamilies();
+        m_usedFamilies = vk_graphic_device::get().getAllUsedFamilies();
         m_mainWindow->createSwapChain(m_mainDevice->device,m_usedFamilies);
 
         //?Working on
@@ -51,7 +50,7 @@ namespace craft{
         //May be convenient to add support to other types of format...
         m_depthImage.format = VK_FORMAT_D32_SFLOAT;
         createImage({m_mainWindow->getExtent().width, m_mainWindow->getExtent().height},  m_depthImage.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                    m_depthImage.depthImage, m_depthImage.memory,m_mainDevice->device,m_mainGpu->getPhysicalDevice());
+                    m_depthImage.depthImage, m_depthImage.memory,m_mainDevice->device,vk_graphic_device::get().getPhysicalDevice());
         createImageView(VK_IMAGE_VIEW_TYPE_2D, m_depthImage.format,m_mainDevice->device, m_depthImage.imageView,m_depthImage.depthImage,VK_IMAGE_ASPECT_DEPTH_BIT,0,0,1,1);
 
         createRenderPass();
@@ -444,12 +443,12 @@ namespace craft{
         vkDeviceWaitIdle(m_mainDevice->device);
     }
 
-    void vk_renderer::setMainGpu(vk_graphic_device *mainGpu) {
-        m_mainGpu = mainGpu;
-    }
-
     void vk_renderer::setMainCamera(camera *pCamera){
         m_currentCamera = pCamera;
+    }
+
+    vk_renderer &vk_renderer::get() {
+        return vk_renderer::s_vk_renderer;
     }
 
 

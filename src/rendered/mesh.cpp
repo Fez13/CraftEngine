@@ -15,11 +15,11 @@ namespace craft{
             LOG("Indices of a geometry are higher then the count of vertices",5,0)
     }
 
-    mesh::mesh(vk_graphic_device &gpu, const char *deviceName, geometry &geometry_p) {
+    mesh::mesh(const char *deviceName, geometry &geometry_p) {
         m_geometry = std::make_unique<geometry>(geometry_p);
 
-        m_vao = vao(m_geometry->vertices,gpu.getDeviceAbstraction(deviceName),gpu.getPhysicalDevice());
-        m_ebo = ebo(m_geometry->indices,gpu.getDeviceAbstraction(deviceName),gpu.getPhysicalDevice());
+        m_vao = vao(m_geometry->vertices,vk_graphic_device::get().getDeviceAbstraction(deviceName),vk_graphic_device::get().getPhysicalDevice());
+        m_ebo = ebo(m_geometry->indices,vk_graphic_device::get().getDeviceAbstraction(deviceName),vk_graphic_device::get().getPhysicalDevice());
         m_vao_data[0] = m_vao.getBuffer();
     }
 

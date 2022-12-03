@@ -21,7 +21,7 @@
 #include "../debug/log.h"
 #include "../debug/time.h"
 
-#include "../rendered/vk_instance.h"
+#include "vk_instance.h"
 #include "../gpu/vk_graphic_device.h"
 #include "../rendered/vk_window.h"
 #include "../shaders/compile_Spir_V.h"
@@ -49,13 +49,7 @@ namespace craft{
 
         frameRate m_mainLoopFrameTime;
 
-        vk_graphic_device m_gpu;
-
         vk_window m_window;
-
-        vk_instance m_instance;
-
-        vk_renderer m_rendered;
 
     };
 }

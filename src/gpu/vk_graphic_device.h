@@ -12,20 +12,22 @@
 
 #include "../debug/log.h"
 #include "vk_device_abstraction.h"
+#include "../core/vk_instance.h"
+#include "../core/vk_instance.h"
 
 namespace craft{
-
-
 
     class vk_graphic_device{
 
     public:
 
-        explicit vk_graphic_device(VkInstance &mainInstance, const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>>& checks);
+        static vk_graphic_device &get();
 
-        explicit vk_graphic_device();
+        vk_graphic_device(const vk_graphic_device&) = delete;
 
-        uint32_t getSuitableQueueFamily(VkInstance &mainInstance, std::function<bool(const VkQueueFamilyProperties &)> checks);
+        void initialize(const std::vector<std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>>& checks);
+
+        uint32_t getSuitableQueueFamily(std::function<bool(const VkQueueFamilyProperties &)> checks);
 
         deviceAbstraction &getDeviceAbstraction(std::string name);
 
@@ -45,13 +47,17 @@ namespace craft{
 
     private:
 
-        VkPhysicalDevice m_mainDevice;
+        vk_graphic_device() = default;
+
+        VkPhysicalDevice m_mainDevice = nullptr;
 
         std::vector<deviceAbstraction> m_mainDeviceAbstractions;
 
         std::vector<VkPhysicalDevice> m_availableDevices;
 
         static bool deviceSuitable(VkPhysicalDevice const &device,const std::vector<std::function<bool(VkPhysicalDeviceProperties&,VkPhysicalDeviceFeatures&)>> &checks);
+
+        static vk_graphic_device s_vk_graphic_device;
 
     };
 

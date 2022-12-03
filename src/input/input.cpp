@@ -2,7 +2,7 @@
 
 namespace craft{
 
-    input input::m_input;
+    input input::s_input;
 
     void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
     {
@@ -10,7 +10,7 @@ namespace craft{
     }
 
     input &input::get() {
-        return m_input;
+        return s_input;
     }
 
     void input::setMainWindow(GLFWwindow *glfwWindow) {
