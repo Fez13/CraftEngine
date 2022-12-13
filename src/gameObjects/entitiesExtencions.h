@@ -2,6 +2,7 @@
 
 #include "../glm/glm.hpp"
 #include "../glm/gtx/quaternion.hpp"
+#include "../glm/gtc/quaternion.hpp"
 
 namespace craft{
     //Should use quaternions
@@ -9,6 +10,11 @@ namespace craft{
     public:
         glm::vec3 position;
         glm::vec3 rotation;
+        glm::vec3 scale{1,1,1};
+
+        glm::mat4 mainMat;
+
+        void updateTransformMatrix();
     };
 
     struct Update{

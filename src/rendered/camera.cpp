@@ -3,6 +3,12 @@
 
 namespace craft{
 
+    vk_buffer camera::s_cameraBuffer;
+
+    struct cameraData{
+        glm::mat4 mainMat;
+    };
+
     void camera_ent::update() {
 
         //Hard coded deltaT
@@ -46,6 +52,7 @@ namespace craft{
         glm::quat q = glm::normalize(
                 glm::cross(glm::angleAxis(rotation.y, right), glm::angleAxis(rotation.x, up)));
         forward = forward * q;
+        
     }
 
     void camera_ent::updateCamera(){
@@ -79,5 +86,26 @@ namespace craft{
         m_ProjectionMat = glm::perspective(glm::radians(m_fov),m_aspectRation,m_nearPlane,m_farPlane);
     }
 
+
+    void camera::initMainBuffer(deviceAbstraction& device){
+        s_cameraBuffer = vk_buffer(device, sizeof(cameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE);
+        s_cameraBuffer.createBufferMemoryRequirements(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vk_graphic_device::get().getPhysicalDevice());
+        s_cameraBuffer.allocateMemory();
+        s_cameraBuffer.bindBuffer();
+    }
+
+    void camera::freeMainBuffer(){
+        s_cameraBuffer.free();
+    }
+
+    void camera::setMainBufferData(camera* cma){
+        auto *data_gpu = s_cameraBuffer.getMemoryLocation<cameraData>();
+        
+        cameraData data;
+        data.mainMat = cma->getMainMatrix();
+        
+        std::memcpy(data_gpu, &data, sizeof(data));
+        s_cameraBuffer.unMapMemory();
+    }
 
 }

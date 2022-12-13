@@ -61,9 +61,7 @@ namespace craft{
 
         VkFormat getSwapChainFormat();
 
-        void getNextSwapChainImage(uint32_t &index,VkSemaphore finish,VkDevice device);
-
-        void setWindowSizeNoUpdate(glm::ivec2 newSize);
+        void getNextSwapChainImage(uint32_t &index,VkSemaphore finish,VkDevice device,VkImageView&  img);
 
         VkFramebuffer getFrameBuffer(uint32_t index) const;
 
@@ -71,9 +69,13 @@ namespace craft{
 
         void setRenderPass(VkRenderPass);
 
+        void reCreateFrameBuffers(VkImageView& img);
+
+        void clearImageViews(const VkDevice &mainDevice) const;
+
     private:
 
-        void createSwapChain(VkDevice device);
+        void createSwapChainKHR(VkDevice device);
 
         struct SwapChainData{
             bool populated = false;

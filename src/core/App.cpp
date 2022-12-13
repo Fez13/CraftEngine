@@ -36,6 +36,8 @@ namespace craft{
 
         m_window.createSwapChainProperties(vk_graphic_device::get().getPhysicalDevice());
 
+        vk_renderer::get().temporal = vk_graphic_device::get().getPhysicalDevice();
+
         float priority = 1.0f;
         vk_graphic_device::get().createDeviceAbstraction(m_window.findQueueFamily(vk_graphic_device::get().getPhysicalDevice()), "QUEUE_KHR", priority,{VK_KHR_SWAPCHAIN_EXTENSION_NAME});
 
@@ -52,12 +54,14 @@ namespace craft{
                 VK_DYNAMIC_STATE_VIEWPORT,
                 VK_DYNAMIC_STATE_SCISSOR
         });
+
+
         vk_renderer::get().createShaderPipeline();
         m_mainLoopFrameTime = frameRate();
     }
 
     int App::mainLoop() {
-
+             
         LOG("Main loop has started",0,1)
         /*
 
@@ -96,7 +100,7 @@ namespace craft{
                 1, 2, 3
         };
         */
-
+        
 
         std::vector<vertex> vertices{
                 {{-1, -1, 0.5f}, {1.0f, 0.0f, 0.0f,1}}, //0
@@ -139,10 +143,14 @@ namespace craft{
 
         geometry geo(vertices,indices);
 
-        mesh m("QUEUE_KHR",geo);
+        Mesh m("QUEUE_KHR",geo);
+
+        Transform trf{};
+        trf.position = {0,0,0};
+        trf.rotation = {0,0,0};
+        trf.scale = {1,1,1};
 
 
-        vk_renderer::get().meshes.push_back(&m);
 
 
         float aspectRatio = (float)m_window.getWindowSize().x / (float)m_window.getWindowSize().y;
@@ -154,7 +162,12 @@ namespace craft{
             static double x = 0;
             x++;
             m_mainLoopFrameTime.wait();
+            vk_renderer::get().createDrawCall(&m,&trf);
 
+            
+            trf.rotation.y = 180 * sin((x * 4) * 0.0016f);
+            trf.rotation.x = 180 * sin((x * 5) * 0.0016f);
+            trf.rotation.z = 180 * sin((x * 6) * 0.0016f);
 
 
             if(input::get().getMouseButtonOnce(Mouse::ButtonMiddle)){

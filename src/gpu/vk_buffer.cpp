@@ -32,13 +32,30 @@ namespace craft{
         }
     }
 
+    vk_buffer::vk_buffer(deviceAbstraction *mainDevice,uint32_t size,const VkBufferUsageFlags &usage, VkSharingMode sharingMode){
+        m_memoryRequirements = VkMemoryRequirements{};
+        m_mainDevice = mainDevice;
+        m_size = size;
+        VkBufferCreateInfo bufferCreateInfo{};
+        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferCreateInfo.sharingMode = sharingMode;
+        bufferCreateInfo.size = m_size;
+        m_localUsages = usage;
+        bufferCreateInfo.usage = usage;
+
+        if(vkCreateBuffer(mainDevice->device,&bufferCreateInfo, nullptr,&m_buffer) != VK_SUCCESS){
+            LOG_TERMINAL("Error creating a buffer",1)
+        }
+    }
+
+
     void vk_buffer::free() {
         vkDestroyBuffer(m_mainDevice->device,m_buffer, nullptr);
         vkFreeMemory(m_mainDevice->device,m_memory, nullptr);
     }
 
     void vk_buffer::createBufferMemoryRequirements(const VkMemoryPropertyFlags &memoryProperties, const VkPhysicalDevice& gpu) {
-        m_mainGpu = gpu;
+        m_mainGpu = gpu; 
         m_memoryRequirements.size = m_size;
         m_memoryProperties = memoryProperties;
 

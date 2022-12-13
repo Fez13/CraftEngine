@@ -26,7 +26,7 @@ namespace craft{
     #define LOG_TERMINAL(text,level) \
    if (1 >= 0.0f) {std::cout << "\033[1;31m" << "Terminal error"; \
    std::cout << " in file: " << __FILE__ << ", line: " << __LINE__ << "\n\t Data: " << text << '\n'<< "\033[0m";throw std::runtime_error("Fatal error");} \
-   else {std::cout << "\033[1;31m"<< "A terminal error was shoot, however, the EXIT_LEVEL is of the error is below the definition..."<< '\n' << "\033[0m";}
+   else {std::cout << "\033[1;31m"<< "A terminal error was shoot, however, the EXIT_LEVEL of the error is below the definition..."<< '\n' << "\033[0m";}
 
 #else
     #define LOG(error,level,state,exit);

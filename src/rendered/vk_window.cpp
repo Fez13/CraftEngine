@@ -74,8 +74,7 @@ namespace craft{
 
         glfwWindowHint(GLFW_REFRESH_RATE,60);
 
-        //Todo: Should be RESIZABLE
-        glfwWindowHint(GLFW_RESIZABLE,GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE,GLFW_TRUE);
         mainWindow = glfwCreateWindow(windowSize.x, windowSize.y, "Craft", nullptr, nullptr);
 
         if(mainWindow == nullptr){
@@ -86,6 +85,7 @@ namespace craft{
 
     void vk_window::free(const VkDevice &device) const {
         cleanFrameBuffers(device);
+        clearImageViews(device);
         glfwDestroyWindow(mainWindow);
         vkDestroySwapchainKHR(device,m_swapChain.swapChainKhr, nullptr);
         vkDestroySurfaceKHR(vk_instance::get().getInstance(),surface, nullptr);
@@ -105,7 +105,7 @@ namespace craft{
 
     void vk_window::setWindowSize(const glm::ivec2 &newSize) {
         m_windowSize = newSize;
-        glfwSetWindowSize(mainWindow,m_windowSize.x,m_windowSize.y);
+        
     }
 
     glm::ivec2 vk_window::getWindowSize() const {
@@ -118,7 +118,7 @@ namespace craft{
 
     uint32_t vk_window::findQueueFamily(VkPhysicalDevice mainDevice) const {
         if(!m_swapChainData.populated){
-            LOG_TERMINAL("You can´t find a queue family without calling createSwapChainProperties before",5)
+            LOG_TERMINAL("You can't find a queue family without calling createSwapChainProperties before",5)
         }
         uint32_t families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(mainDevice, &families, nullptr);
@@ -143,6 +143,7 @@ namespace craft{
         }
 
         LOG_TERMINAL("There is not queue family with requested capabilities",999)
+        return 0;
     }
 
     void vk_window::createSwapChainProperties(VkPhysicalDevice const &device) const {
@@ -166,6 +167,8 @@ namespace craft{
 
     void vk_window::createSwapChain(const VkDevice &device, const std::vector<uint32_t>& queueFamilies, uint32_t swapChainImageCount ) {
         m_mainDevice = device;
+
+        
         if(m_queueFamily == -1){
             LOG_TERMINAL("'createSwapChain' must be call after finding a queue",999)
         }
@@ -200,7 +203,6 @@ namespace craft{
             m_swapChain.extent = m_swapChainData.capabilities.currentExtent;
             didFind[2] = true;
         }
-
         //If the screen coordinates and the screen pixels do not match, we have to fix the error
         if(!didFind[2]){
             int x,y;
@@ -209,8 +211,8 @@ namespace craft{
             LOG("Not optimal extent has been chose",0,0)
 
             VkExtent2D extent2D{
-                static_cast<uint32_t>(x),
-                static_cast<uint32_t>(y)
+                static_cast<uint32_t>(m_windowSize.x),
+                static_cast<uint32_t>(m_windowSize.x)
             };
 
             m_swapChain.extent.width = std::clamp(extent2D.width, m_swapChainData.capabilities.minImageExtent.width, m_swapChainData.capabilities.maxImageExtent.width);
@@ -256,11 +258,10 @@ namespace craft{
         swapChainInfo.clipped = VK_TRUE;
         swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        createSwapChain(device);
 
+        createSwapChainKHR(device);
         m_swapChain.UpdateImages(device);
         m_swapChain.UpdateImageViews(device);
-
     }
 
     void vk_window::update(const VkDevice& device) {
@@ -275,8 +276,6 @@ namespace craft{
         return m_swapChain.format.format;
     }
 
-
-
     void vk_window::createFrameBuffers(VkDevice const &device,VkImageView depthImage) {
         m_swapChain.frameBuffers.resize(m_swapChain.imagesViews.size());
 
@@ -284,8 +283,8 @@ namespace craft{
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = m_renderPass;
         framebufferInfo.attachmentCount = 2;
-        framebufferInfo.width = getExtent().width;
-        framebufferInfo.height = getExtent().height;
+        framebufferInfo.width = m_windowSize.x;
+        framebufferInfo.height = m_windowSize.y;
         framebufferInfo.layers = 1;
 
         for (size_t i = 0; i < m_swapChain.imagesViews.size(); i++) {
@@ -313,7 +312,7 @@ namespace craft{
         return m_swapChain.frameBuffers[index];
     }
 
-    void vk_window::getNextSwapChainImage(uint32_t &index, VkSemaphore finish, VkDevice device) {
+    void vk_window::getNextSwapChainImage(uint32_t &index, VkSemaphore finish, VkDevice device,VkImageView&  img) {
         vkAcquireNextImageKHR(device,m_swapChain.swapChainKhr, UINT64_MAX, finish, VK_NULL_HANDLE, &index);
     }
 
@@ -333,18 +332,21 @@ namespace craft{
 
     void vk_window::cleanFrameBuffers(const VkDevice &mainDevice) const{
         for(const auto& fb : m_swapChain.frameBuffers)
-            vkDestroyFramebuffer(mainDevice,fb, nullptr);
+            vkDestroyFramebuffer(mainDevice,fb, nullptr);  
+    }
 
+    void vk_window::clearImageViews(const VkDevice &mainDevice) const{
         for(const auto& iv : m_swapChain.imagesViews)
             vkDestroyImageView(mainDevice, iv, nullptr);
     }
 
-    void vk_window::setWindowSizeNoUpdate(glm::ivec2 newSize) {
-        m_windowSize = newSize;
-        m_swapChain.extent = m_swapChainData.capabilities.currentExtent;
+    void vk_window::reCreateFrameBuffers(VkImageView& img){
+        cleanFrameBuffers(m_mainDevice);
+        createFrameBuffers(m_mainDevice,img);
     }
 
-    void vk_window::createSwapChain(const VkDevice device) {
+    void vk_window::createSwapChainKHR(const VkDevice device) {
+
         VkSwapchainCreateInfoKHR swapChainInfo = {};
         swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         swapChainInfo.surface = surface;

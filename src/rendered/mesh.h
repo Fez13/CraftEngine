@@ -24,10 +24,10 @@ namespace craft{
         geometry(const std::vector<vertex>&,const std::vector<uint32_t>&);
     };
 
-    class mesh {
+    class Mesh {
     public:
 
-        explicit mesh(const char* deviceName,geometry&);
+        explicit Mesh(const char* deviceName,geometry&);
 
         void free();
 
@@ -35,7 +35,7 @@ namespace craft{
 
         std::array<VkBuffer,1> &getVaoArray();
 
-        ~mesh();
+        ~Mesh();
 
         vao& getVao();
         ebo& getEbo();

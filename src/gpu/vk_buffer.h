@@ -19,7 +19,10 @@ namespace craft{
 
         explicit vk_buffer() = default;
 
-        explicit vk_buffer(deviceAbstraction &mainDevice,uint32_t size,const VkBufferUsageFlags &usage, VkSharingMode sharingMode);
+        vk_buffer(deviceAbstraction &mainDevice,uint32_t size,const VkBufferUsageFlags &usage, VkSharingMode sharingMode);
+
+        vk_buffer(deviceAbstraction *mainDevice,uint32_t size,const VkBufferUsageFlags &usage, VkSharingMode sharingMode);
+
 
         void createBufferMemoryRequirements(const VkMemoryPropertyFlags &memoryProperties,const VkPhysicalDevice& device);
 
