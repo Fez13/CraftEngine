@@ -34,6 +34,17 @@ namespace craft{
     #define LOG_TERMINAL(text,level) \
     std::cout<<"\033[1;31m"<< "Terminal error";\
     std::cout<<" in file: "<<__FILE__<<", line: "<<__LINE__<<"\n\t Data: "<<text<<'\n'<<"\033[0m"; exit(1);
-
 #endif
+
+    //Inline LOG used for templates
+    inline void LOGI(std::string text,int level,int state){
+        if(state == -1) 
+            std::cout<<"\033[1;31m"<< "Error"; 
+        else if(state == 0) 
+            std::cout<<"\033[1;33m"<<"Warning"; 
+        else if(state == 1) 
+            std::cout<<"\033[1;36m"<<"Comment";
+        std::cout<<" in file: "<<__FILE__<<", line: "<<__LINE__<<"\n\t Data: "<<text<<'\n'<<"\033[0m";
+    }
+
 }

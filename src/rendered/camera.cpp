@@ -3,69 +3,20 @@
 
 namespace craft{
 
-    vk_buffer camera::s_cameraBuffer;
+    vk_buffer Camera::s_cameraBuffer;
 
-    struct cameraData{
+    const extencion Camera::s_extencionLabel = Extencions::CR_CAMERA_EXTENCION;
+
+    std::vector<Camera> Camera::s_instancies;
+
+
+
+    struct cameraDataBuffer{
         glm::mat4 mainMat;
     };
 
-    void camera_ent::update() {
-
-        //Hard coded deltaT
-        const float deltaT = 1.0f / 60.0f;
-
-        glm::vec2 CurrentMousePosition = input::get().GetMousePosition();
-
-        if(glfwGetInputMode(m_window,GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
-            return;
-
-        static auto mousePosition_old = glm::vec2(0.0f);
-
-        glm::vec2 MouseDelta = (CurrentMousePosition - mousePosition_old) * deltaT;
-
-        MouseDelta.y *= -1.0f;
-
-        rotation = glm::vec3(MouseDelta * m_camera_sens, 0);
-
-        mousePosition_old = CurrentMousePosition;
-
-        glm::vec3 right = glm::cross(forward, up);
-
-        if (input::get().getKeyDowm(Key::W))
-            position += m_camera_speed * forward;
-
-        if (input::get().getKeyDowm(Key::S))
-            position -= m_camera_speed * forward;
-
-        if (input::get().getKeyDowm(Key::A))
-            position -= right * m_camera_speed;
-
-        if (input::get().getKeyDowm(Key::D))
-            position += right * m_camera_speed;
-
-        if (input::get().getKeyDowm(Key::Space))
-            position -= up * m_camera_speed;
-
-        if (input::get().getKeyDowm(Key::LeftControl))
-            position += up * m_camera_speed;
-
-        glm::quat q = glm::normalize(
-                glm::cross(glm::angleAxis(rotation.y, right), glm::angleAxis(rotation.x, up)));
-        forward = forward * q;
-        
-    }
-
-    void camera_ent::updateCamera(){
-        updateMainMat(position, forward);
-    }
-
-    camera_ent::camera_ent(float aspectRatio,GLFWwindow *window) : camera(aspectRatio), Transform() {
-        position = glm::vec3(0.0f);
-        m_window = window;
-    }
-
-
-    camera::camera(float aspectRation) : m_ViewMat(1.0f),m_ProjectionMat(1.0f),m_ViewProjectionMat(1.0f) {
+    //Camera extencion
+     Camera::Camera(float aspectRation) : m_ViewMat(1.0f),m_ProjectionMat(1.0f),m_ViewProjectionMat(1.0f) {
         m_aspectRation = aspectRation;
         m_farPlane = 100.0f;
         m_nearPlane = 0.01f;
@@ -73,39 +24,120 @@ namespace craft{
         updatePerspective();
     }
 
-    void camera::updateMainMat(glm::vec3 position,glm::vec3 direction){
+    void Camera::updateMainMat(glm::vec3 position,glm::vec3 direction){
         m_ViewMat = glm::lookAt(position, position + (direction), up);
         m_ViewProjectionMat = m_ProjectionMat * m_ViewMat;
     }
 
-    glm::mat4 &camera::getMainMatrix(){
+    glm::mat4 &Camera::getMainMatrix(){
         return m_ViewProjectionMat;
     }
 
-    void camera::updatePerspective() {
+    void Camera::updatePerspective() {
         m_ProjectionMat = glm::perspective(glm::radians(m_fov),m_aspectRation,m_nearPlane,m_farPlane);
     }
 
-
-    void camera::initMainBuffer(deviceAbstraction& device){
-        s_cameraBuffer = vk_buffer(device, sizeof(cameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE);
+    void Camera::initMainBuffer(deviceAbstraction& device){
+        s_cameraBuffer = vk_buffer(device, sizeof(cameraDataBuffer), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE);
         s_cameraBuffer.createBufferMemoryRequirements(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vk_graphic_device::get().getPhysicalDevice());
         s_cameraBuffer.allocateMemory();
         s_cameraBuffer.bindBuffer();
     }
 
-    void camera::freeMainBuffer(){
+    void Camera::freeMainBuffer(){
         s_cameraBuffer.free();
     }
 
-    void camera::setMainBufferData(camera* cma){
-        auto *data_gpu = s_cameraBuffer.getMemoryLocation<cameraData>();
+    void Camera::setMainBufferData(Camera* cma){
+        auto *data_gpu = s_cameraBuffer.getMemoryLocation<cameraDataBuffer>();
         
-        cameraData data;
+        cameraDataBuffer data;
         data.mainMat = cma->getMainMatrix();
         
         std::memcpy(data_gpu, &data, sizeof(data));
         s_cameraBuffer.unMapMemory();
     }
+
+    void* cameraUpdate(Entity* entt){
+        static Transform *transform = nullptr;
+        static CameraController *cameraData = nullptr;
+
+        if(transform == nullptr || cameraData == nullptr){
+            cameraData = getExtencion<CameraController>(entt);
+            transform = getExtencion<Transform>(entt);
+        }
+
+        static double previousTime = glfwGetTime();
+
+        double currentTime = glfwGetTime();
+
+        float deltaT = currentTime - previousTime;
+
+        previousTime = currentTime;
+
+
+
+        glm::vec2 CurrentMousePosition = input::get().GetMousePosition();
+
+        if(glfwGetInputMode(static_cast<GLFWwindow*>(cameraData->m_window),GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
+            return nullptr;
+
+        static auto mousePosition_old = glm::vec2(0.0f);
+
+        glm::vec2 MouseDelta = (CurrentMousePosition - mousePosition_old) * deltaT;
+
+        MouseDelta.y *= -1.0f;
+
+        transform->rotation = glm::vec3(MouseDelta * cameraData->m_camera_sens, 0);
+
+        mousePosition_old = CurrentMousePosition;
+
+        glm::vec3 right = glm::cross(cameraData->forward, cameraData->up);
+
+        if (input::get().getKeyDowm(Key::W))
+            transform->position += cameraData->m_camera_speed * cameraData->forward * deltaT;
+
+        if (input::get().getKeyDowm(Key::S))
+            transform->position -= cameraData->m_camera_speed * cameraData->forward * deltaT;
+
+        if (input::get().getKeyDowm(Key::A))
+            transform->position -= right * cameraData->m_camera_speed * deltaT;
+
+        if (input::get().getKeyDowm(Key::D))
+            transform->position += right * cameraData->m_camera_speed * deltaT;
+
+        if (input::get().getKeyDowm(Key::Space))
+            transform->position -= cameraData->up * cameraData->m_camera_speed * deltaT;
+
+        if (input::get().getKeyDowm(Key::LeftControl))
+            transform->position += cameraData->up * cameraData->m_camera_speed * deltaT;
+
+        glm::quat q = glm::normalize(
+                glm::cross(glm::angleAxis(transform->rotation.y, right), glm::angleAxis(transform->rotation.x,cameraData->up)));
+        cameraData->forward = cameraData->forward * q;
+        return nullptr;   
+    }
+
+    //New camera
+    
+    camera_entt::camera_entt(float aspectRatio,GLFWwindow *window){
+        m_myEntity = static_cast<Entity*>(this);
+        m_transform = attachExtencion<Transform>(m_myEntity);
+        m_cameraCotroller = attachExtencion<CameraController>(m_myEntity);
+        m_update = attachExtencion<Update>(m_myEntity);
+        m_camera = attachExtencion<Camera>(m_myEntity, aspectRatio);
+        m_update->function = cameraUpdate;
+        m_cameraCotroller->m_window = window;
+        m_cameraCotroller->m_aspectRation = aspectRatio;
+        m_cameraCotroller->m_camera_sens = 0.35f;
+        m_cameraCotroller->m_camera_speed = 2.0f;
+    
+    }
+
+    void camera_entt::updateCamera(){
+        m_camera->updateMainMat(m_transform->position, m_cameraCotroller->forward);
+    }
+
+
 
 }

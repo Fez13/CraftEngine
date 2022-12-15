@@ -3,6 +3,7 @@
 
 namespace craft{
 
+
     vk_renderer vk_renderer::s_vk_renderer;
 
     void vk_renderer::reCreateSwapChain(int width, int height){
@@ -70,11 +71,11 @@ namespace craft{
         m_usedFamilies = vk_graphic_device::get().getAllUsedFamilies();
         m_mainWindow->createSwapChain(m_mainDevice->device,m_usedFamilies);
 
-        camera::initMainBuffer(vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR"));
+        Camera::initMainBuffer(vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR"));
 
         descriptorSetsLayouts.emplace_back();
 
-        descriptorSetsLayouts[0].addBinding(camera::s_cameraBuffer,0);
+        descriptorSetsLayouts[0].addBinding(Camera::s_cameraBuffer,0);
         descriptorSetsLayouts[0].InitDescriptorAllocator(m_mainDevice->device);
 
 
@@ -149,7 +150,7 @@ namespace craft{
         vkDestroyDescriptorPool(m_mainDevice->device, m_descriptionPool, nullptr);
         m_vert.free();
         m_frag.free();
-        camera::freeMainBuffer();
+        Camera::freeMainBuffer();
     }
 
     void vk_renderer::setPolygonMode(VkPolygonMode mode) {
@@ -280,7 +281,7 @@ namespace craft{
             LOG("The rendered has no camera",1,0)
         }
         else{
-            camera::setMainBufferData(m_currentCamera);
+            Camera::setMainBufferData(m_currentCamera);
             vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &descriptorSetsLayouts[0].descriptorSet, 0, nullptr);
         }
 
@@ -340,7 +341,7 @@ namespace craft{
         vkDeviceWaitIdle(m_mainDevice->device);
     }
 
-    void vk_renderer::setMainCamera(camera *pCamera){
+    void vk_renderer::setMainCamera(Camera *pCamera){
         m_currentCamera = pCamera;
     }
 

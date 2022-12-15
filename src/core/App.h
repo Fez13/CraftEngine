@@ -52,5 +52,41 @@ namespace craft{
         vk_window m_window;
 
     };
+
+
+    class Entt
+    {
+    private:
+    public:
+        Entt(){};
+        int id = 0;
+    };
+
+    class AGAIN
+    {
+    public:
+
+        AGAIN(Entt& atcc) : atachment(&atcc){
+            s_instancies.push_back(this);
+        }
+
+        virtual void update() = 0;
+
+        static std::vector<AGAIN*> s_instancies;
+
+        Entt* atachment;
+    }; 
+
+    class cameraUpdate : public AGAIN{
+        public:
+            void update() override{
+                std::cout<<"aaaaaaaaa\n";
+            }
+            cameraUpdate(Entt& atcc) : AGAIN(atcc){
+
+            }
+
+        private:
+    };
 }
 

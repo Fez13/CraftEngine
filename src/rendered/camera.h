@@ -15,12 +15,14 @@
 #include "../gpu/vk_buffer.h"
 #include "../glm/gtc/matrix_transform.hpp"
 #include "../gpu/vk_graphic_device.h"
+#include "../gameObjects/extencionsLabels.h"
+#include "../gameObjects/entitiesExtencions.h"
 
 namespace craft{
 
-    class camera {
+    struct Camera {
     public:
-        explicit camera(float aspectRation);
+        explicit Camera(float aspectRation);
 
         void updateMainMat(glm::vec3 position,glm::vec3 direction);
 
@@ -33,16 +35,21 @@ namespace craft{
 
         static void freeMainBuffer();
 
-        static void setMainBufferData(camera*);
+        static void setMainBufferData(Camera*);
 
         static vk_buffer s_cameraBuffer;
+
+        Entity* attachment;
+
+        static std::vector<Camera> s_instancies;
+
+        const static extencion s_extencionLabel;
 
     private:
         glm::mat4 m_ProjectionMat;
         glm::mat4 m_ViewMat;
         glm::mat4 m_ViewProjectionMat;
 
-    protected:
         float m_nearPlane;
         float m_farPlane;
         float m_aspectRation;
@@ -52,21 +59,33 @@ namespace craft{
         const glm::vec3 up = glm::vec3(0, 1, 0);
     };
 
-    class camera_ent : Entity, Update, public Transform, public camera{
+
+
+    class camera_entt : public Entity{
 
     public:
 
-        camera_ent(float aspectRatio,  GLFWwindow *window);
+        camera_entt(float aspectRatio,  GLFWwindow *window);
 
-        void update() override;
+        Camera* getCamera(){return m_camera;}
 
         void updateCamera();
 
     protected:
+
+        Camera *m_camera;
+
+        Entity *m_myEntity;
+
+        Transform* m_transform;
     
-        float m_camera_speed = 1.0f * 0.016f;
-        float m_camera_sens = 10 * 0.016f;
-        GLFWwindow *m_window;
+        CameraController* m_cameraCotroller;
+
+        Update* m_update;
+
 
     };
+
+    
+
 }

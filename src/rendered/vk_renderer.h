@@ -68,7 +68,7 @@ namespace craft{
         void createDrawCall(drawCall newCall);
         void createDrawCall(Mesh* mesh, Transform* transform);
 
-        void setMainCamera(camera *pCamera);
+        void setMainCamera(Camera *pCamera);
 
         void reCreateSwapChain(int width, int height);
 
@@ -149,7 +149,7 @@ namespace craft{
         VkSemaphore m_waitImage;
         VkSemaphore m_waitRender;
 
-        camera* m_currentCamera;
+        Camera* m_currentCamera;
 
         VkDescriptorPool m_descriptionPool;
 

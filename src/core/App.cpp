@@ -2,6 +2,9 @@
 
 namespace craft{
 
+    std::vector<AGAIN*> AGAIN::s_instancies;
+
+
     bool IsGood(VkPhysicalDeviceProperties& pt,VkPhysicalDeviceFeatures& ft){
 
         if(pt.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -60,9 +63,10 @@ namespace craft{
         m_mainLoopFrameTime = frameRate();
     }
 
+
     int App::mainLoop() {
-             
         LOG("Main loop has started",0,1)
+
         /*
 
         //Extensions
@@ -154,9 +158,8 @@ namespace craft{
 
 
         float aspectRatio = (float)m_window.getWindowSize().x / (float)m_window.getWindowSize().y;
-        camera_ent *myCamera = new camera_ent(aspectRatio,m_window.mainWindow);
-        myCamera->position = glm::vec3(0.0f, 0.0f, 0.0f);
-        vk_renderer::get().setMainCamera(static_cast<craft::camera*>(myCamera));
+        camera_entt *myCamera = new camera_entt(aspectRatio,m_window.mainWindow);
+        vk_renderer::get().setMainCamera(myCamera->getCamera());
 
         while (!glfwWindowShouldClose(m_window.mainWindow)) {
             static double x = 0;
@@ -165,9 +168,9 @@ namespace craft{
             vk_renderer::get().createDrawCall(&m,&trf);
 
             
-            trf.rotation.y = 180 * sin((x * 4) * 0.0016f);
-            trf.rotation.x = 180 * sin((x * 5) * 0.0016f);
-            trf.rotation.z = 180 * sin((x * 6) * 0.0016f);
+          //  trf.rotation.y = 180 * sin((x * 4) * 0.0016f);
+          //  trf.rotation.x = 180 * sin((x * 5) * 0.0016f);
+          //  trf.rotation.z = 180 * sin((x * 6) * 0.0016f);
 
 
             if(input::get().getMouseButtonOnce(Mouse::ButtonMiddle)){
@@ -179,7 +182,10 @@ namespace craft{
                 state = !state;
             }
 
-            myCamera->update();
+            //Call all update functions
+            for(uint32_t i = 0; i < Update::s_instancies.size();i++)
+                Update::s_instancies[i].function(Update::s_instancies[i].attachment);
+            
             myCamera->updateCamera();
             m_window.update(vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR").device);
             vk_renderer::get().updateFrame();
