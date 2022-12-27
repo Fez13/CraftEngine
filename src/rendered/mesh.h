@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "glm.hpp"
 #include "vertex.h"
+#include "../vendor/glm/glm.hpp"
 #include "../debug/log.h"
 #include "../rendered/vao.h"
 #include "../rendered/ebo.h"
@@ -17,17 +17,17 @@
 
 namespace craft{
 
-    struct geometry{
+    struct Geometry{
         std::vector<vertex> vertices;
         std::vector<uint32_t> indices;
 
-        geometry(const std::vector<vertex>&,const std::vector<uint32_t>&);
+        Geometry(const std::vector<vertex>&,const std::vector<uint32_t>&);
     };
 
     class Mesh {
     public:
 
-        explicit Mesh(const char* deviceName,geometry&);
+        explicit Mesh(const char* deviceName,Geometry&);
 
         void free();
 
@@ -41,11 +41,14 @@ namespace craft{
         ebo& getEbo();
 
     private:
-        std::unique_ptr<geometry> m_geometry;
+        std::unique_ptr<Geometry> m_geometry;
 
         std::array<VkBuffer,1> m_vao_data{};
 
         vao m_vao{};
         ebo m_ebo{};
     };
+
+    Geometry loadModel(const std::string &path);
+
 }

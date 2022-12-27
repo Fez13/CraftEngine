@@ -7,12 +7,11 @@ namespace craft{
 
     const extencion Camera::s_extencionLabel = Extencions::CR_CAMERA_EXTENCION;
 
-    std::vector<Camera> Camera::s_instancies;
-
-
+    std::vector<std::shared_ptr<Camera>> Camera::s_instancies;
 
     struct cameraDataBuffer{
-        glm::mat4 mainMat;
+        glm::mat4 projection;
+        glm::mat4 view;
     };
 
     //Camera extencion
@@ -31,6 +30,10 @@ namespace craft{
 
     glm::mat4 &Camera::getMainMatrix(){
         return m_ViewProjectionMat;
+    }
+
+    glm::mat4 *Camera::getMainMatrixPointer(){
+        return &m_ViewProjectionMat;
     }
 
     void Camera::updatePerspective() {
@@ -52,7 +55,8 @@ namespace craft{
         auto *data_gpu = s_cameraBuffer.getMemoryLocation<cameraDataBuffer>();
         
         cameraDataBuffer data;
-        data.mainMat = cma->getMainMatrix();
+        data.view = cma->m_ViewMat; 
+        data.projection = cma->m_ProjectionMat; 
         
         std::memcpy(data_gpu, &data, sizeof(data));
         s_cameraBuffer.unMapMemory();
@@ -61,11 +65,16 @@ namespace craft{
     void* cameraUpdate(Entity* entt){
         static Transform *transform = nullptr;
         static CameraController *cameraData = nullptr;
+        static Camera *camera = nullptr;
 
-        if(transform == nullptr || cameraData == nullptr){
+
+        if(transform == nullptr || cameraData == nullptr || camera == nullptr){
             cameraData = getExtencion<CameraController>(entt);
             transform = getExtencion<Transform>(entt);
+            camera = getExtencion<Camera>(entt);
+        
         }
+
 
         static double previousTime = glfwGetTime();
 
@@ -115,29 +124,9 @@ namespace craft{
         glm::quat q = glm::normalize(
                 glm::cross(glm::angleAxis(transform->rotation.y, right), glm::angleAxis(transform->rotation.x,cameraData->up)));
         cameraData->forward = cameraData->forward * q;
+        
+        camera->updateMainMat(transform->position, cameraData->forward);
+        Camera::setMainBufferData(camera);
         return nullptr;   
     }
-
-    //New camera
-    
-    camera_entt::camera_entt(float aspectRatio,GLFWwindow *window){
-        m_myEntity = static_cast<Entity*>(this);
-        m_transform = attachExtencion<Transform>(m_myEntity);
-        m_cameraCotroller = attachExtencion<CameraController>(m_myEntity);
-        m_update = attachExtencion<Update>(m_myEntity);
-        m_camera = attachExtencion<Camera>(m_myEntity, aspectRatio);
-        m_update->function = cameraUpdate;
-        m_cameraCotroller->m_window = window;
-        m_cameraCotroller->m_aspectRation = aspectRatio;
-        m_cameraCotroller->m_camera_sens = 0.35f;
-        m_cameraCotroller->m_camera_speed = 2.0f;
-    
-    }
-
-    void camera_entt::updateCamera(){
-        m_camera->updateMainMat(m_transform->position, m_cameraCotroller->forward);
-    }
-
-
-
 }

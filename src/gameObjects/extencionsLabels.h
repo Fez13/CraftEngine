@@ -8,12 +8,12 @@ namespace craft{
 
     namespace Extencions{
         enum : extencion{
-            CR_NULL_EXTENCION = 0,
-            CR_TRANSFORM_EXTENCION = 1,
-            CR_UPDATE_EXTENCION = 2,
-            CR_CAMERACONTROLLER_EXTENCION = 3,
+            CR_EXTENCION_NULL = 0,
+            CR_EXTENCION_TRANSFORM = 1,
+            CR_EXTENCION_UPDATE = 2,
+            CR_EXTENCION_CAMERACONTROLLER = 3,
             CR_CAMERA_EXTENCION = 4,
-            
+            CR_EXTENCION_DRAWABLE3D = 5,
         };
     }
 }

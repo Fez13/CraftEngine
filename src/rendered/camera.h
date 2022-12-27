@@ -5,15 +5,15 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include"../glm/gtx/rotate_vector.hpp"
-#include"../glm/gtx/vector_angle.hpp"
-#include "../glm/glm.hpp"
+#include"../vendor/glm/gtx/rotate_vector.hpp"
+#include"../vendor/glm/gtx/vector_angle.hpp"
+#include "../vendor/glm/glm.hpp"
 #include "../debug/log.h"
 #include "../gameObjects/entity.h"
 #include "../gameObjects/entitiesExtencions.h"
 #include "../input/input.h"
 #include "../gpu/vk_buffer.h"
-#include "../glm/gtc/matrix_transform.hpp"
+#include "../vendor/glm/gtc/matrix_transform.hpp"
 #include "../gpu/vk_graphic_device.h"
 #include "../gameObjects/extencionsLabels.h"
 #include "../gameObjects/entitiesExtencions.h"
@@ -30,6 +30,8 @@ namespace craft{
 
         glm::mat4 &getMainMatrix();
 
+        glm::mat4 *getMainMatrixPointer();
+
         //Has to be call after creating a gpu
         static void initMainBuffer(deviceAbstraction&);
 
@@ -41,9 +43,12 @@ namespace craft{
 
         Entity* attachment;
 
-        static std::vector<Camera> s_instancies;
+        static std::vector<std::shared_ptr<Camera>> s_instancies;
 
         const static extencion s_extencionLabel;
+
+        ~Camera(){LOG_COMPONENT_DESTRUCTION("Camera")}
+
 
     private:
         glm::mat4 m_ProjectionMat;
@@ -59,33 +64,5 @@ namespace craft{
         const glm::vec3 up = glm::vec3(0, 1, 0);
     };
 
-
-
-    class camera_entt : public Entity{
-
-    public:
-
-        camera_entt(float aspectRatio,  GLFWwindow *window);
-
-        Camera* getCamera(){return m_camera;}
-
-        void updateCamera();
-
-    protected:
-
-        Camera *m_camera;
-
-        Entity *m_myEntity;
-
-        Transform* m_transform;
-    
-        CameraController* m_cameraCotroller;
-
-        Update* m_update;
-
-
-    };
-
-    
-
+    void* cameraUpdate(Entity* entt);
 }

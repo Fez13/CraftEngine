@@ -2,14 +2,20 @@
 
 namespace craft{
 
+    double frameRate::getElapsedTime() const{
+        return m_elapsedTime;
+    }
+
     void frameRate::wait() {
 
         start = std::chrono::system_clock::now();
         std::chrono::duration<double, std::milli> work_time = start - finish;
 
-        if (work_time.count() < 16.666667f)
+        m_elapsedTime = work_time.count(); 
+
+        if (work_time.count() < (1000 * (1.0f / frameObjective)))
         {
-            std::chrono::duration<double, std::milli> delta_ms(16.666667f - work_time.count());
+            std::chrono::duration<double, std::milli> delta_ms((1000 * (1.0f / frameObjective)) - work_time.count());
             auto delta_ms_duration = std::chrono::duration_cast<std::chrono::milliseconds>(delta_ms);
             std::this_thread::sleep_for(std::chrono::milliseconds(delta_ms_duration.count()));
         }

@@ -24,17 +24,9 @@ namespace craft{
     //2 arguments, the error text, and the level of the error,
     // if the level is below the definition of EXIT_LEVEL, the error won't be thrown
     #define LOG_TERMINAL(text,level) \
-   if (1 >= 0.0f) {std::cout << "\033[1;31m" << "Terminal error"; \
-   std::cout << " in file: " << __FILE__ << ", line: " << __LINE__ << "\n\t Data: " << text << '\n'<< "\033[0m";throw std::runtime_error("Fatal error");} \
-   else {std::cout << "\033[1;31m"<< "A terminal error was shoot, however, the EXIT_LEVEL of the error is below the definition..."<< '\n' << "\033[0m";}
-
-#else
-    #define LOG(error,level,state,exit);
-
-    #define LOG_TERMINAL(text,level) \
-    std::cout<<"\033[1;31m"<< "Terminal error";\
-    std::cout<<" in file: "<<__FILE__<<", line: "<<__LINE__<<"\n\t Data: "<<text<<'\n'<<"\033[0m"; exit(1);
-#endif
+    if (1 >= 0.0f) {std::cout << "\033[1;31m" << "Terminal error"; \
+    std::cout << " in file: " << __FILE__ << ", line: " << __LINE__ << "\n\t Data: " << text << '\n'<< "\033[0m";throw std::runtime_error("Fatal error");} \
+    else {std::cout << "\033[1;31m"<< "A terminal error was shoot, however, the EXIT_LEVEL of the error is below the definition..."<< '\n' << "\033[0m";}
 
     //Inline LOG used for templates
     inline void LOGI(std::string text,int level,int state){
@@ -46,5 +38,23 @@ namespace craft{
             std::cout<<"\033[1;36m"<<"Comment";
         std::cout<<" in file: "<<__FILE__<<", line: "<<__LINE__<<"\n\t Data: "<<text<<'\n'<<"\033[0m";
     }
+
+#else
+    inline void LOGI(std::string text,int level,int state){}
+
+    #define LOG(error,level,state,exit)
+
+    #define LOG_TERMINAL(text,level) \
+    std::cout<<"\033[1;31m"<< "Terminal error";\
+    std::cout<<" in file: "<<__FILE__<<", line: "<<__LINE__<<"\n\t Data: "<<text<<'\n'<<"\033[0m"; exit(1);
+#endif
+
+#if defined(LOG_COMPONENT_DESTRUCTION) && !defined(RELEASE)
+    #define LOG_COMPONENT_DESTRUCTION(Name) std::cout<<"\033[1;94m"<<__TIME__<<" An object of time: '"<<Name<<"' has been destroyed..."<<"\033[0m"<<'\n';
+
+#else
+    #define LOG_COMPONENT_DESTRUCTION(Name)
+#endif
+
 
 }

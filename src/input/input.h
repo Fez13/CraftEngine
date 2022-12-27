@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../utils/utils.hpp"
-#include "../glm/glm.hpp"
+#include "../vendor/glm/glm.hpp"
 #include "../input/keyCodes.h"
 
 namespace craft{

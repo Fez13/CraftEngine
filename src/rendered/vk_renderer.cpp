@@ -3,7 +3,6 @@
 
 namespace craft{
 
-
     vk_renderer vk_renderer::s_vk_renderer;
 
     void vk_renderer::reCreateSwapChain(int width, int height){
@@ -55,10 +54,8 @@ namespace craft{
         format = VK_FORMAT_D32_SFLOAT;
         createImage({window->getExtent().width, window->getExtent().height},  format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     depthImage, memory,device,vk_graphic_device::get().getPhysicalDevice());
-            createImageView(VK_IMAGE_VIEW_TYPE_2D, format,device, imageView,depthImage,VK_IMAGE_ASPECT_DEPTH_BIT,0,0,1,1);
+        createImageView(VK_IMAGE_VIEW_TYPE_2D, format,device, imageView,depthImage,VK_IMAGE_ASPECT_DEPTH_BIT,0,0,1,1);
     }
-
-
 
     void vk_renderer::createShaderPipeline() {
 
@@ -71,11 +68,12 @@ namespace craft{
         m_usedFamilies = vk_graphic_device::get().getAllUsedFamilies();
         m_mainWindow->createSwapChain(m_mainDevice->device,m_usedFamilies);
 
-        Camera::initMainBuffer(vk_graphic_device::get().getDeviceAbstraction("QUEUE_KHR"));
 
         descriptorSetsLayouts.emplace_back();
 
-        descriptorSetsLayouts[0].addBinding(Camera::s_cameraBuffer,0);
+        descriptorSetsLayouts[0].addBinding(0);
+        descriptorSetsLayouts[0].addBindingImage(1, VK_SHADER_STAGE_FRAGMENT_BIT);
+        
         descriptorSetsLayouts[0].InitDescriptorAllocator(m_mainDevice->device);
 
 
@@ -115,9 +113,10 @@ namespace craft{
         m_mainDevice->createFence(VK_FENCE_CREATE_SIGNALED_BIT);
 
 
-        //!DescriptorSets
+        //DescriptorSets
         descriptorSetsLayouts[0].allocateDescriptorSet(m_mainDevice->device);
-        descriptorSetsLayouts[0].updateDescriptorSets(m_mainDevice->device);
+        descriptorSetsLayouts[0].updateBufferBinding(m_cameraBuffer,0,m_mainDevice->device);
+
 
         //WILL CHANGE
         VkSemaphoreCreateInfo semaphoreCreateInfo{};
@@ -150,7 +149,6 @@ namespace craft{
         vkDestroyDescriptorPool(m_mainDevice->device, m_descriptionPool, nullptr);
         m_vert.free();
         m_frag.free();
-        Camera::freeMainBuffer();
     }
 
     void vk_renderer::setPolygonMode(VkPolygonMode mode) {
@@ -277,17 +275,25 @@ namespace craft{
         scissor.extent = m_mainWindow->getExtent();
         vkCmdSetScissor(buffer, 0, 1, &scissor);
 
-        if(m_currentCamera == nullptr){
-            LOG("The rendered has no camera",1,0)
+        if(m_cameraBuffer == nullptr){
+            LOG_TERMINAL("The rendered has no camera... TODO: Add a default one",999) //TODO: default camera
         }
-        else{
-            Camera::setMainBufferData(m_currentCamera);
-            vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &descriptorSetsLayouts[0].descriptorSet, 0, nullptr);
-        }
+        vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &descriptorSetsLayouts[0].descriptorSet, 0, nullptr);
+
+
+        std::pair<VkSampler,VkImageView> bindData = Texture::getDefaultBindData(); //Default texture to avoid crashes //TODO: TEXTURES
+        //std::pair<VkSampler,VkImageView> bindData = m_drawCalls[0].texture->bindData();
+        
+
+        descriptorSetsLayouts[0].updateImageBinding(bindData.second,bindData.first,1,m_mainDevice->device);
 
         for(uint32_t i = 0; i < m_drawCalls.size();i++){
-            m_drawCalls[i].transform->updateTransformMatrix();
-            vkCmdPushConstants(buffer,m_pipelineLayout,VK_SHADER_STAGE_VERTEX_BIT,0,sizeof(glm::mat4),&m_drawCalls[i].transform->mainMat);
+
+            pushConstData data = {m_drawCalls[i].transform, false};
+            
+            if(m_drawCalls[i].texture != nullptr)
+                data.hasTexture = true;
+            vkCmdPushConstants(buffer,m_pipelineLayout,VK_SHADER_STAGE_ALL,0,sizeof(pushConstData),&data);    
 
             vkCmdBindVertexBuffers(buffer, 0, 1,m_drawCalls[i].mesh->getVaoArray().data(), offset);
             vkCmdBindIndexBuffer(buffer, m_drawCalls[i].mesh->getEbo().getBuffer(), 0, VK_INDEX_TYPE_UINT32);
@@ -300,6 +306,7 @@ namespace craft{
             LOG_TERMINAL("Error recording command buffer",999)
         }
     }
+
 
     void vk_renderer::setClearColor(glm::vec4 newColor) {
         m_clearColor = newColor;
@@ -341,10 +348,6 @@ namespace craft{
         vkDeviceWaitIdle(m_mainDevice->device);
     }
 
-    void vk_renderer::setMainCamera(Camera *pCamera){
-        m_currentCamera = pCamera;
-    }
-
     vk_renderer &vk_renderer::get() {
          return vk_renderer::s_vk_renderer;
     }
@@ -352,16 +355,12 @@ namespace craft{
     void vk_renderer::createDrawCall(drawCall newOrder){
         m_drawCalls.push_back(newOrder);
     }
-    
-    void vk_renderer::createDrawCall(Mesh* mesh, Transform* transform){
-        m_drawCalls.emplace_back(mesh,transform);
-    }
 
     void vk_renderer::createPipelineLayout(){
         VkPushConstantRange pushConstantRange{};
-        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; //At the moment push constants olny afect VERTEX stage
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_ALL; //At the moment push constants afect ALL stages
         pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(glm::mat4);
+        pushConstantRange.size = sizeof(pushConstData);
 
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

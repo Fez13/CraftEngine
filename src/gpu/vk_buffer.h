@@ -9,6 +9,7 @@
 
 #include "../debug/log.h"
 #include "../gpu/vk_device_abstraction.h"
+#include  "../rendered/imageUtils.hpp"
 
 namespace craft{
 
@@ -40,6 +41,8 @@ namespace craft{
         VkBuffer getBuffer();
 
         friend void operator<<(vk_buffer& input, vk_buffer& output);
+
+        void copyDataToImage(VkImage dst,const uint32_t &width,const uint32_t &height);
 
         void free();
 

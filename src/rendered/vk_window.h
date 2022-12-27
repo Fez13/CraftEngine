@@ -7,20 +7,15 @@
 #include <iostream>
 #include <vector>
 
-#include "glm.hpp"
+#include "../vendor/glm/glm.hpp"
 
+#include  "../rendered/imageUtils.hpp"
 #include "../gpu/vk_buffer.h"
 #include "../utils/utils.hpp"
 #include "../debug/log.h"
 #include "../core/vk_instance.h"
 
 namespace craft{
-
-    void createImageView(VkImageViewType viewType, VkFormat format,VkDevice device, VkImageView& imageView, VkImage& image, VkImageAspectFlags aspectFlags
-            , uint32_t baseMinp , uint32_t baseArray , uint32_t levelCount, uint32_t layerCount);
-
-    void createImage(glm::ivec2 size, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image
-            , VkDeviceMemory& imageMemory, VkDevice &device,VkPhysicalDevice gpu);
 
     struct vk_window{
 
@@ -46,6 +41,8 @@ namespace craft{
         void setWindowSize(const glm::ivec2 &newSize);
 
         glm::ivec2 getWindowSize() const;
+
+        glm::ivec2 getWindowSizeDefault() const;
 
         uint32_t getRefreshRate() const;
 
@@ -119,6 +116,8 @@ namespace craft{
         uint32_t m_refreshRate;
 
         glm::ivec2 m_windowSize;
+
+        glm::ivec2 m_windowSizeDefault;
 
         swapChainInfo_static m_swapChainInfoStatic;
 

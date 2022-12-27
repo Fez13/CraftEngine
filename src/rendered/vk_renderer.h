@@ -7,9 +7,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "glm.hpp"
+#include "../vendor/glm/glm.hpp"
 
-
+#include  "../rendered/imageUtils.hpp"
 #include "../utils/utils.hpp"
 #include "../debug/log.h"
 #include "vk_window.h"
@@ -18,16 +18,19 @@
 #include "../gpu/vk_shader.h"
 #include "mesh.h"
 #include "../gpu/vk_buffer.h"
-#include "camera.h"
+#include "../gpu/texture.h"
 
 namespace craft{
 
-
     struct drawCall{
         Mesh* mesh;
-        Transform* transform;
+        glm::mat4 transform;
+        Texture* texture;
     };
-    struct cameraPushData{
+     struct pushConstData{
+        glm::mat4 mat;
+        bool hasTexture;
+
     };
 
     //TODO:
@@ -66,11 +69,10 @@ namespace craft{
         void free();
 
         void createDrawCall(drawCall newCall);
-        void createDrawCall(Mesh* mesh, Transform* transform);
-
-        void setMainCamera(Camera *pCamera);
 
         void reCreateSwapChain(int width, int height);
+
+        void setCameraBuffer(vk_buffer& buffer){m_cameraBuffer = std::make_shared<vk_buffer>(buffer);}
 
         VkPhysicalDevice temporal; //!                                                          <-----
 
@@ -149,14 +151,29 @@ namespace craft{
         VkSemaphore m_waitImage;
         VkSemaphore m_waitRender;
 
-        Camera* m_currentCamera;
+        glm::mat4* m_currentCameraMat;
+        std::shared_ptr<vk_buffer> m_cameraBuffer;
+
 
         VkDescriptorPool m_descriptionPool;
 
+        struct bufferBinding{
+            bool populated = false;
+            VkDescriptorSetLayoutBinding layoutBinding;
+            VkDescriptorBufferInfo bufferInfo;
+        };
+
+        struct imageBinding{
+            bool populated = false;
+            VkDescriptorSetLayoutBinding layoutBinding;
+            VkDescriptorImageInfo imageInfo;
+        };
+
         struct descriptorSetData{
-            std::vector<std::unique_ptr<vk_buffer>> buffers;
-            std::vector<VkDescriptorSetLayoutBinding> bindings;
-            std::vector<VkDescriptorBufferInfo> bufferInfos;
+            std::vector<std::shared_ptr<vk_buffer>> buffers;
+
+            std::unordered_map<uint32_t, bufferBinding> bufferBindings;
+            std::unordered_map<uint32_t, imageBinding> imageBindings;
 
             VkDescriptorPool dstPool;
             VkDescriptorSet descriptorSet;
@@ -178,63 +195,110 @@ namespace craft{
                 }
             }
 
-            //Call AFTER creatin the pipeline
-            void updateDescriptorSets(VkDevice &device){
-                VkWriteDescriptorSet wrtDst;
-                wrtDst.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                wrtDst.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                wrtDst.dstBinding = 0;
-                wrtDst.dstArrayElement = 0;
-                wrtDst.descriptorCount = bindingsCount;
-                wrtDst.pBufferInfo = bufferInfos.data();
-                wrtDst.dstSet = descriptorSet;
-                wrtDst.pNext = nullptr;
-                
-                
-                vkUpdateDescriptorSets(device , 1 ,&wrtDst,0,nullptr);
-            }
-
+     
         
             void InitDescriptorAllocator(VkDevice &device){
                 VkDescriptorSetLayoutCreateInfo createInfo{};
                 createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
                 createInfo.bindingCount = bindingsCount;
-                createInfo.pBindings = bindings.data();
+
+                VkDescriptorSetLayoutBinding bindings[bindingsCount];
+                uint32_t bindingIndex = 0;
+
+                for(const auto& binding : imageBindings){
+                    bindings[bindingIndex] = binding.second.layoutBinding;
+                    bindingIndex++;
+                }
+
+                for(const auto& binding : bufferBindings){
+                    bindings[bindingIndex] = binding.second.layoutBinding;
+                    bindingIndex++;
+                }
+                                   
+                createInfo.pBindings = bindings;
 
                 if(vkCreateDescriptorSetLayout(device,&createInfo,nullptr,&dstLayout) != VK_SUCCESS)
                     LOG_TERMINAL("Error creating DescriptorSetLayout...",999)
 
-                VkDescriptorPoolSize poolSize{};
-                poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                poolSize.descriptorCount = bindingsCount;
+                std::vector<VkDescriptorPoolSize> sizes;
 
+                
+                for(uint32_t i = 0; i < bufferBindings.size(); i++)
+                    sizes.emplace_back(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,1);
+
+                for(uint32_t i = 0; i < imageBindings.size(); i++)
+                    sizes.emplace_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,1);
+                
                 VkDescriptorPoolCreateInfo dstPoolInfo{};
                 dstPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-                dstPoolInfo.poolSizeCount = 1;
-                dstPoolInfo.pPoolSizes = &poolSize;
+                dstPoolInfo.poolSizeCount = bindingsCount;
+                dstPoolInfo.pPoolSizes = sizes.data();
                 dstPoolInfo.maxSets = bindingsCount;
 
                 if(vkCreateDescriptorPool(device,&dstPoolInfo,nullptr,&dstPool) != VK_SUCCESS)
                     LOG_TERMINAL("Error creating DescriptorPool",999)
             }
+            void updateImageBinding(VkImageView &imageView, VkSampler &sampler,uint32_t index, VkDevice &device){
 
-            void addBinding(vk_buffer& buffer, uint32_t index,VkShaderStageFlagBits stages = VK_SHADER_STAGE_VERTEX_BIT,VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER){
+                VkDescriptorImageInfo *obj = &imageBindings[index].imageInfo;
+                obj->imageView = imageView;
+                obj->sampler = sampler;
+                obj->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                VkWriteDescriptorSet wrds{};
+                wrds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                wrds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                wrds.dstBinding = index;
+                wrds.dstArrayElement = 0;
+                wrds.descriptorCount = 1;
+                wrds.dstSet = descriptorSet;
+                wrds.pImageInfo = obj;
+                vkUpdateDescriptorSets(device , 1 ,&wrds,0,nullptr);
+            }
+            void addBindingImage(uint32_t index,VkShaderStageFlagBits stages = VK_SHADER_STAGE_VERTEX_BIT){
                 bindingsCount++;
-                bindings.emplace_back();
-                buffers.emplace_back(std::make_unique<vk_buffer>(buffer));
-                bufferInfos.emplace_back();
 
-                bindings.back().binding = index;
-                bindings.back().descriptorCount = 1;
-                bindings.back().descriptorType = type;
-                bindings.back().pImmutableSamplers = nullptr;
-                bindings.back().stageFlags = stages;
+                imageBindings[index].populated = true;
+                VkDescriptorSetLayoutBinding *obj = &imageBindings[index].layoutBinding;
 
-                bufferInfos.back().buffer = buffers.back()->getBuffer();
-                bufferInfos.back().offset = 0;
-                bufferInfos.back().range = buffers.back()->getSize();
+                obj->binding = index;
+                obj->descriptorCount = 1;
+                obj->descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                obj->pImmutableSamplers = nullptr;
+                obj->stageFlags = stages;
             }
 
+            void updateBufferBinding(std::shared_ptr<vk_buffer> buffer, uint32_t index, VkDevice &device){
+                VkDescriptorBufferInfo *obj = &bufferBindings[index].bufferInfo;
+                obj->buffer = buffer->getBuffer();
+                obj->offset = 0;
+                obj->range = buffer->getSize();
+
+                VkWriteDescriptorSet wrds{};
+                wrds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                wrds.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                wrds.dstBinding = index;
+                wrds.dstArrayElement = 0;
+                wrds.descriptorCount = 1;
+                wrds.dstSet = descriptorSet;
+                wrds.pNext = nullptr;
+                wrds.pBufferInfo = obj;
+                vkUpdateDescriptorSets(device , 1 ,&wrds,0,nullptr);
+            }
+
+            void addBinding(uint32_t index ,VkShaderStageFlagBits stages = VK_SHADER_STAGE_VERTEX_BIT){
+                bindingsCount++;
+                bufferBindings[index].populated = true;
+                VkDescriptorSetLayoutBinding *obj = &bufferBindings[index].layoutBinding;
+
+                obj->binding = index;
+                obj->descriptorCount = 1;
+                obj->descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                obj->pImmutableSamplers = nullptr;
+                obj->stageFlags = stages;
+            }
+
+        
             void free(VkDevice& device){
                 vkDestroyDescriptorPool(device,dstPool,nullptr);
                 vkDestroyDescriptorSetLayout(device,dstLayout,nullptr);
@@ -252,7 +316,7 @@ namespace craft{
 
 
         VkVertexInputBindingDescription bindings;
-        std::vector<VkVertexInputAttributeDescription> attributes;
+        std::array<VkVertexInputAttributeDescription, ATRIBUTE_COUNT> attributes;
         VkPipelineVertexInputStateCreateInfo inputStateCreateInfo;
         void plCreateVertexInputStateCreateInfo();
 

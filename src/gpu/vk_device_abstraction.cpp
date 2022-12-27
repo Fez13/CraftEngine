@@ -42,8 +42,17 @@ namespace craft{
         return commandBuffer;
     }
 
-    void deviceAbstraction::SubmitWork(VkSemaphore) {
+    VkCommandBuffer deviceAbstraction::createOneTimeUseCommandBuffer(VkCommandBufferLevel bufferLevel) const{
+        VkCommandBuffer cmd = createCommandBuffer(bufferLevel,1);
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(cmd,&beginInfo);
+        return cmd;
+    }
 
+    void deviceAbstraction::SubmitWork(VkSemaphore) {
+        //TODO:
     }
 
     void deviceAbstraction::createFence(VkFenceCreateFlags flags) {
@@ -55,6 +64,7 @@ namespace craft{
     }
 
     void deviceAbstraction::SubmitWork(VkCommandBuffer *commandBuffers,uint32_t count,uint32_t queueIndex) {
+        
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = count;

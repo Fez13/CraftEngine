@@ -23,6 +23,8 @@ namespace craft{
 
         VkCommandBuffer createCommandBuffer(VkCommandBufferLevel bufferLevel, uint32_t bufferCount) const;
 
+        VkCommandBuffer createOneTimeUseCommandBuffer(VkCommandBufferLevel bufferLevel) const;
+
         void createFence(VkFenceCreateFlags flags);
 
         void SubmitWork(VkCommandBuffer *commandBuffers,uint32_t count,uint32_t queueIndex = 0);

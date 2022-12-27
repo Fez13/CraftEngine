@@ -8,7 +8,7 @@ namespace craft{
 
     void vk_instance::initialize(const char *appName, uint32_t appVersion, uint32_t apiVersion,
                                  const std::vector<std::string> &layers, const std::vector<std::string> &extensions) {
-
+ 
         VkApplicationInfo AppInfo{};
         AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         AppInfo.pApplicationName = appName;

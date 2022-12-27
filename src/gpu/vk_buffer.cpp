@@ -3,17 +3,7 @@
 
 namespace craft{
 
-    uint32_t findMemory(const VkMemoryPropertyFlags memoryProperties,VkPhysicalDeviceMemoryProperties deviceMemoryProperties,uint32_t memoryType){
-
-        for(uint32_t i = 0; i < deviceMemoryProperties.memoryTypeCount;i++){
-            if(!(memoryType & (1 < i)))
-                continue;
-
-            if((deviceMemoryProperties.memoryTypes[i].propertyFlags & memoryProperties) == memoryProperties)
-                return i;
-        }
-        LOG_TERMINAL("Couldn't find memory properties",1)
-    }
+  
 
     vk_buffer::vk_buffer(deviceAbstraction &mainDevice, uint32_t size,const VkBufferUsageFlags &usage,
                                 VkSharingMode sharingMode) {
@@ -112,12 +102,7 @@ namespace craft{
             LOG("The n of queues in the device: " + input.m_mainDevice->name + " is to low for a buffer copy, a new queue will be created",5,0)
             input.m_mainDevice->findNewQueue();
         }
-        VkCommandBuffer cmd = input.m_mainDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY,1);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        vkBeginCommandBuffer(cmd,&beginInfo);
+        VkCommandBuffer cmd = input.m_mainDevice->createOneTimeUseCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
         VkBufferCopy bufferCopy{};
         bufferCopy.dstOffset = 0;
@@ -129,8 +114,43 @@ namespace craft{
 
         input.m_mainDevice->SubmitWork(&cmd,1);
         input.m_mainDevice->waitToFinish(1);
+    }
 
-        vkFreeCommandBuffers(input.m_mainDevice->device,input.m_mainDevice->commandPool,1,&cmd);
+
+    
+
+    void vk_buffer::copyDataToImage(VkImage dst,const uint32_t &width,const uint32_t &height) {
+
+        if(!(m_localUsages & VK_BUFFER_USAGE_TRANSFER_SRC_BIT)){
+            LOG("Wen writing in a image the source buffer must have the 'VK_BUFFER_USAGE_TRANSFER_SRC_BIT' flag, the operation will be aborted.",5,-1)
+            return;
+        }
+ 
+
+        if(m_mainDevice->queue.size() == 1){
+            LOG("The n of queues in the device: " + m_mainDevice->name + " is to low for a buffer copy, a new queue will be created",5,0)
+            m_mainDevice->findNewQueue();
+        }
+        VkCommandBuffer cmd = m_mainDevice->createOneTimeUseCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+        VkBufferImageCopy region{};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {width,height,1};
+
+        vkCmdCopyBufferToImage(cmd,m_buffer,dst,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,1,&region);
+
+        vkEndCommandBuffer(cmd);
+        m_mainDevice->SubmitWork(&cmd,1);
+        m_mainDevice->waitToFinish(1);
     }
 
 }

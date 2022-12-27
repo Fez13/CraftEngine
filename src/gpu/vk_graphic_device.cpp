@@ -29,6 +29,7 @@ namespace craft{
             if(checks(queueFamilies[i]))
                 return i;
         LOG_TERMINAL("There is not queue family with requested capabilities",999)
+        return -1;
     }
 
     deviceAbstraction &vk_graphic_device::getDeviceAbstraction(std::string name) {

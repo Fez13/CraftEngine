@@ -2,7 +2,7 @@
 
 namespace craft{
 
-    geometry::geometry(const std::vector<vertex> &vertices_, const std::vector<uint32_t> &indices_) {
+    Geometry::Geometry(const std::vector<vertex> &vertices_, const std::vector<uint32_t> &indices_) {
         vertices = vertices_;
         indices = indices_;
 
@@ -15,8 +15,8 @@ namespace craft{
             LOG("Indices of a geometry are higher then the count of vertices",5,0)
     }
 
-    Mesh::Mesh(const char *deviceName, geometry &geometry_p) {
-        m_geometry = std::make_unique<geometry>(geometry_p);
+    Mesh::Mesh(const char *deviceName, Geometry &geometry_p) {
+        m_geometry = std::make_unique<Geometry>(geometry_p);
 
         m_vao = vao(m_geometry->vertices,vk_graphic_device::get().getDeviceAbstraction(deviceName),vk_graphic_device::get().getPhysicalDevice());
         m_ebo = ebo(m_geometry->indices,vk_graphic_device::get().getDeviceAbstraction(deviceName),vk_graphic_device::get().getPhysicalDevice());
@@ -48,5 +48,12 @@ namespace craft{
     size_t Mesh::getIndicesCount() {
         return m_geometry->indices.size();
     }
+
+    Geometry loadModel(const std::string &path){
+
+
+
+    }
+
 
 }

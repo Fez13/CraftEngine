@@ -12,10 +12,12 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include "glm.hpp"
-#include "../glm/gtx/transform.hpp"
+#include "../vendor/glm/glm.hpp"
+#include "../vendor/glm/gtx/transform.hpp"
 
 //#define RELEASE
+#define LOG_COMPONENT_DESTRUCTION
+
 #include "../utils/utils.hpp"
 #include "../utils/frameRate.h"
 #include "../debug/log.h"
@@ -30,7 +32,7 @@
 #include "../gpu/vk_buffer.h"
 #include "../rendered/camera.h"
 #include "../input/input.h"
-
+#include "../gpu/texture.h"
 
 namespace craft{
 
@@ -45,7 +47,13 @@ namespace craft{
 
         void clean();
 
+        void setMainLoopFramerate(float newFrameRate);
+
     private:
+
+        void defaultInputs();
+
+        float m_refreshRate = 60;
 
         frameRate m_mainLoopFrameTime;
 
@@ -53,40 +61,5 @@ namespace craft{
 
     };
 
-
-    class Entt
-    {
-    private:
-    public:
-        Entt(){};
-        int id = 0;
-    };
-
-    class AGAIN
-    {
-    public:
-
-        AGAIN(Entt& atcc) : atachment(&atcc){
-            s_instancies.push_back(this);
-        }
-
-        virtual void update() = 0;
-
-        static std::vector<AGAIN*> s_instancies;
-
-        Entt* atachment;
-    }; 
-
-    class cameraUpdate : public AGAIN{
-        public:
-            void update() override{
-                std::cout<<"aaaaaaaaa\n";
-            }
-            cameraUpdate(Entt& atcc) : AGAIN(atcc){
-
-            }
-
-        private:
-    };
 }
 
