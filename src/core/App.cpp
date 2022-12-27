@@ -29,7 +29,7 @@ namespace craft
 
 	void App::defaultInputs()
 	{
-
+		//aaaaaaaaaaaaaaaaa
 		// Window
 		if (input::get().getKeyDownOnce(Key::F11))
 		{
